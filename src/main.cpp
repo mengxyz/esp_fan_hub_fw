@@ -1,10 +1,13 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include "I2C_eeprom.h"
 #include <SensirionI2cSht4x.h>
 #include <Adafruit_ADS1X15.h>
 #include <Adafruit_NeoPixel.h>
 #include <Adafruit_INA219.h>
 #include "PCF8574.h"
+
+#define EEPROM_I2C_ADDRESS 0x50
 
 #define PIN_TAC_1 41
 #define PIN_TAC_2 40
@@ -240,28 +243,59 @@ void readSht40()
 
 #define PCF8574_I2C_ADDRESS 0x39
 PCF8574 pcf(PCF8574_I2C_ADDRESS);
+// define static array variables store PCF8574 pin numbers
+
+const int PCF8574_OUTPUT_PIN[] = {
+    0,
+    1,
+    2,
+    4,
+    5,
+    6,
+};
+
+const int PCF8574_INPUT_PIN[] = {
+    3,
+    7,
+};
 
 void initPcf8574()
 {
-  for (int i = 0; i < 8; i++)
+  Serial.print("PCF8574 ");
+  // set input pins
+  for (int i = 0; i < 2; i++)
   {
-    pcf.pinMode(i, OUTPUT);
+    pcf.pinMode(PCF8574_INPUT_PIN[i], INPUT);
   }
-  Serial.print("Init pcf8574...");
+  // set output pins
+  for (int i = 0; i < 6; i++)
+  {
+    pcf.pinMode(PCF8574_OUTPUT_PIN[i], OUTPUT);
+  }
   if (pcf.begin())
   {
     Serial.println("OK");
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 6; i++)
     {
       pcf.digitalWrite(i, LOW);
     }
   }
   else
   {
-    Serial.println("KO");
+    Serial.println("PCF8574 KO");
   }
-  /// Test Write switch hight
-  pcf.digitalWrite(3, HIGH);
+}
+
+I2C_eeprom ee(EEPROM_I2C_ADDRESS, I2C_DEVICESIZE_24LC256);
+void initEEPROM()
+{
+  ee.begin();
+  if (!ee.isConnected())
+  {
+    Serial.println("ERROR: Can't find eeprom");
+    return;
+  }
+  Serial.println("EEPROM OK");
 }
 
 void IRAM_ATTR TAC_1_ISR()
@@ -399,6 +433,7 @@ void setup()
   initIna219();
   initAds1115();
   initSht40();
+  initEEPROM();
 }
 
 void loop()
@@ -434,6 +469,12 @@ void loop()
 
   // readInaData(ina219_1);
   // readInaData(ina219_2);
+
+  int pinstate = 0;
+  pinstate = pcf.digitalRead(3);
+  Serial.printf("PIN 3: %d \n", pinstate);
+  pinstate = pcf.digitalRead(7);
+  Serial.printf("PIN 7: %d \n", pinstate);
 
   delay(2000);
 }
