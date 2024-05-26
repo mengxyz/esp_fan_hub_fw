@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Data Display</title>
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: left;
+      }
+      .yellow {
+        color: rgb(147, 147, 0);
+      }
+      .red {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <label for="urlInput">WebSocket URL:</label>
+    <input
+      type="text"
+      id="urlInput"
+      value="ws://192.168.1.184/ws?token=dXNlcjoxMjM0NTY="
+    />
+    <button id="connectBtn">Connect</button>
+    <button id="disconnectBtn" disabled>Disconnect</button>
+    <table id="data-table">
+      <thead>
+        <tr>
+          <th>Sensor</th>
+          <th>Data Type</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody id="data-body"></tbody>
+    </table>
+
+    <script>
+      let socket;
+
+      const connectBtn = document.getElementById("connectBtn");
+      const disconnectBtn = document.getElementById("disconnectBtn");
+      const dataTable = document.getElementById("data-body");
+      const urlInput = document.getElementById("urlInput");
+
+      connectBtn.addEventListener("click", () => {
+        const url = urlInput.value;
+        socket = new WebSocket(url);
+
+        socket.onopen = () => {
+          console.log("Connected to WebSocket server");
+          connectBtn.disabled = true;
+          disconnectBtn.disabled = false;
+        };
+
+        socket.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          displayData(data);
+        };
+
+        socket.onclose = () => {
+          console.log("Disconnected from WebSocket server");
+          connectBtn.disabled = false;
+          disconnectBtn.disabled = true;
+        };
+
+        socket.onerror = (error) => {
+          console.error("WebSocket error: ", error);
+        };
+      });
+
+      disconnectBtn.addEventListener("click", () => {
+        if (socket) {
+          socket.close();
+        }
+      });
+
+      function displayData(data) {
+        dataTable.innerHTML = "";
+        for (const sensor in data) {
+          if (sensor === "voltage") {
+            const voltageData = data[sensor];
+            for (const voltageType in voltageData) {
+              const voltageDetails = voltageData[voltageType];
+              const formattedCurrent = voltageDetails.current.toFixed(2);
+              const formattedVoltage = voltageDetails.voltage.toFixed(2);
+              const formattedPower = voltageDetails.power.toFixed(2);
+              const currentColorClass =
+                voltageType === "twelveVolt" ? "yellow" : "red";
+              const voltageColorClass =
+                voltageType === "twelveVolt" ? "yellow" : "red";
+              const powerColorClass =
+                voltageType === "twelveVolt" ? "yellow" : "red";
+              const row =
+                `<tr><td>${sensor}</td><td>${voltageType} - Current</td><td class="${currentColorClass}">${formattedCurrent}</td></tr>` +
+                `<tr><td></td><td>${voltageType} - Voltage</td><td class="${voltageColorClass}">${formattedVoltage}</td></tr>` +
+                `<tr><td></td><td>${voltageType} - Power</td><td class="${powerColorClass}">${formattedPower}</td></tr>`;
+              dataTable.innerHTML += row;
+            }
+          } else {
+            for (const dataType in data[sensor]) {
+              const value =
+                typeof data[sensor][dataType] === "number"
+                  ? data[sensor][dataType].toFixed(2)
+                  : data[sensor][dataType];
+              const row = `<tr><td>${sensor}</td><td>${dataType}</td><td>${value}</td></tr>`;
+              dataTable.innerHTML += row;
+            }
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
