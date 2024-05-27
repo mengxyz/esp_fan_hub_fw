@@ -137,3 +137,20 @@ void FanControl::setAllDuty(uint8_t duty)
   ledcWrite(PWM_CH_4, pwm_duties[3]);
   ledcWrite(PWM_CH_5, pwm_duties[4]);
 }
+
+void FanControl::readFanData(FanData *fanData)
+{
+  for (int i = 0; i < 5; i++)
+  {
+    fanData->freqs[i] = pwm_freqs[i];
+    fanData->duties[i] = pwm_duties[i];
+  }
+}
+
+void FanControl::resetFreqs()
+{
+  for (int i = 0; i < 5; i++)
+  {
+    pwm_freqs[i] = 0;
+  }
+}

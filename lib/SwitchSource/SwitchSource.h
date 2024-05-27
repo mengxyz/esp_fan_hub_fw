@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <PCF8574.h>
+#include <SensorData.h>
 
 #define PCF8574_I2C_ADDRESS 0x39
 
@@ -36,6 +37,7 @@ public:
     void toggle(InputSource source);
     int readInputState(InputSource source);
     int readSwitchState(SwSource source);
+    void readState(FanInputSource *fanInputSource);
 
 private:
     void notReady();

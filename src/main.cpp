@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include <SensirionI2cSht4x.h>
+#include <Sht40.h>
 #include <Adafruit_NeoPixel.h>
 #include <WiFiConfig.h>
 #include <SwitchSource.h>
@@ -43,30 +43,10 @@ void initArgb()
   pixels.show();
 }
 
-#define NO_ERROR 0
-
 Thermister thermister;
 SwitchSource swSource;
 DataStore dataStore;
 FanControl fanControl;
-SensirionI2cSht4x sht;
-void initSht40()
-{
-  char errorMessage[64];
-  int16_t error;
-  sht.begin(Wire, SHT40_I2C_ADDR_44);
-  sht.softReset();
-  delay(10);
-  uint32_t serialNumber = 0;
-  error = sht.serialNumber(serialNumber);
-  if (error != NO_ERROR)
-  {
-    Serial.println("SHT40 not ready");
-    return;
-  }
-  Serial.println("SHT40 ready");
-  Serial.printf("SHT40 sn %d \n", serialNumber);
-}
 
 int testColorsIndex = 0;
 bool testColorsIndexChanged = false;
@@ -92,6 +72,7 @@ void setup()
   Serial.begin(115200);
   Wire.begin(12, 11);
   fanControl.begin();
+  fanControl.beginBtnUtils();
   initBtnUtility();
   initArgb();
   swSource.begin();
@@ -116,11 +97,14 @@ void loop()
       dataStore.setSht40Data(sht);
       dataStore.setThermisterData(thermister);
       dataStore.setVoltageSensorData(voltageSensor);
+      dataStore.setSwitchSourceData(swSource);
+      dataStore.setFanData(fanControl);
       // dataStore.printSensorData();
       String out = dataStore.getSensorDataJson();
       ws.textAll(out);
       Serial.println("Data sent");
     }
     previousMillis = currentMillis;
+    fanControl.resetFreqs();
   }
 }

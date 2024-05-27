@@ -1,7 +1,9 @@
+#include <Arduino.h>
+#include <SensorData.h>
+
 #if !defined(FAN_CONTROL_H)
 #define FAN_CONTROL_H
 
-#include <Arduino.h>
 
 #define PIN_TAC_1 41
 #define PIN_TAC_2 40
@@ -52,6 +54,8 @@ public:
     void begin();
     void beginBtnUtils();
     void setAllDuty(uint8_t duty);
+    void readFanData(FanData *fanData);
+    void resetFreqs();
 };
 
 #endif // FAN_CONTROL_H

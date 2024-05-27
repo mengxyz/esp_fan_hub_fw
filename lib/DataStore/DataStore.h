@@ -5,6 +5,8 @@
 #include <SensirionI2cSht4x.h>
 #include <Thermister.h>
 #include <VoltageSensor.h>
+#include <SwitchSource.h>
+#include <FanControl.h>
 
 #if !defined(DATA_STORE_H)
 #define DATA_STORE_H
@@ -29,6 +31,8 @@ public:
     void setSht40Data(SensirionI2cSht4x& sht);
     void setThermisterData(Thermister& thermister);
     void setVoltageSensorData(VoltageSensor& voltageSensor);
+    void setSwitchSourceData(SwitchSource& switchSource);
+    void setFanData(FanControl& fanControl);
 };
 
 

@@ -73,6 +73,22 @@ int SwitchSource::readSwitchState(SwSource source)
     return pcf.digitalRead(source);
 }
 
+void SwitchSource::readState(FanInputSource *fanInputSource)
+{
+    if (!ready)
+    {
+        notReady();
+        return;
+    }
+
+    fanInputSource->ch1 = pcf.digitalRead(PWM_SW_CH_1);
+    fanInputSource->ch2 = pcf.digitalRead(PWM_SW_CH_2);
+    fanInputSource->ch3 = pcf.digitalRead(PWM_SW_CH_3);
+    fanInputSource->ch4 = pcf.digitalRead(PWM_SW_CH_4);
+    fanInputSource->ch5 = pcf.digitalRead(PWM_SW_CH_5);
+    fanInputSource->argb = pcf.digitalRead(ARGB_SW);
+}
+
 void SwitchSource::notReady()
 {
     Serial.println("SwitchSource not ready");

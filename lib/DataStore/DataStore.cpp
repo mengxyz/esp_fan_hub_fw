@@ -1,11 +1,4 @@
-#include <Arduino.h>
-#include <SensorData.h>
-#include <I2C_eeprom.h>
 #include <DataStore.h>
-#include <ArduinoJson.h>
-#include <SensirionI2cSht4x.h>
-#include <Thermister.h>
-#include <VoltageSensor.h>
 
 String DataStore::serializedSensorDataString()
 {
@@ -32,6 +25,22 @@ JsonDocument DataStore::serializedSensorDataDoc()
     sensorDataDoc["voltage"]["fiveVolt"]["current"] = sensorData.voltage.fiveVolt.current;
     sensorDataDoc["voltage"]["fiveVolt"]["voltage"] = sensorData.voltage.fiveVolt.voltage;
     sensorDataDoc["voltage"]["fiveVolt"]["power"] = sensorData.voltage.fiveVolt.power;
+    
+    // FanInputSource
+    sensorDataDoc["fanInputSource"]["ch1"] = sensorData.fanInputSource.ch1;
+    sensorDataDoc["fanInputSource"]["ch2"] = sensorData.fanInputSource.ch2;
+    sensorDataDoc["fanInputSource"]["ch3"] = sensorData.fanInputSource.ch3;
+    sensorDataDoc["fanInputSource"]["ch4"] = sensorData.fanInputSource.ch4;
+    sensorDataDoc["fanInputSource"]["ch5"] = sensorData.fanInputSource.ch5;
+    sensorDataDoc["fanInputSource"]["argb"] = sensorData.fanInputSource.argb;
+
+    // FanData
+    for (int i = 0; i < 5; i++)
+    {
+        sensorDataDoc["fanData"]["freqs"][i] = sensorData.fanData.freqs[i];
+        sensorDataDoc["fanData"]["duties"][i] = sensorData.fanData.duties[i];
+        sensorDataDoc["fanData"]["rpms"][i] = sensorData.fanData.freqs[i] * 60 / 2;
+    }
 
     return sensorDataDoc;
 }
@@ -98,4 +107,14 @@ void DataStore::setVoltageSensorData(VoltageSensor &voltageSensor)
 {
     voltageSensor.read5V(&sensorData.voltage.fiveVolt);
     voltageSensor.read12V(&sensorData.voltage.twelveVolt);
+}
+
+void DataStore::setSwitchSourceData(SwitchSource & switchSource)
+{
+    switchSource.readState(&sensorData.fanInputSource);
+}
+
+void DataStore::setFanData(FanControl & fanControl)
+{
+    fanControl.readFanData(&sensorData.fanData);
 }
