@@ -1,30 +1,27 @@
 // lib/SwitchSource/SwitchSource.cpp
 
 #include <SwitchSource.h>
-#include <Arduino.h>
-#include <Wire.h>
-#include <PCF8574.h>
 
 bool SwitchSource::begin()
 {
-    pcf.pinMode(PWM_SW_CH_1, OUTPUT);
-    pcf.pinMode(PWM_SW_CH_2, OUTPUT);
-    pcf.pinMode(PWM_SW_CH_3, OUTPUT);
-    pcf.pinMode(PWM_SW_CH_4, OUTPUT);
-    pcf.pinMode(PWM_SW_CH_5, OUTPUT);
-    pcf.pinMode(ARGB_SW, OUTPUT);
+    this->pcf.pinMode(PWM_SW_CH_1, OUTPUT);
+    this->pcf.pinMode(PWM_SW_CH_2, OUTPUT);
+    this->pcf.pinMode(PWM_SW_CH_3, OUTPUT);
+    this->pcf.pinMode(PWM_SW_CH_4, OUTPUT);
+    this->pcf.pinMode(PWM_SW_CH_5, OUTPUT);
+    this->pcf.pinMode(ARGB_SW, OUTPUT);
 
-    pcf.pinMode(SW_1, INPUT);
-    pcf.pinMode(SW_2, INPUT);
+    this->pcf.pinMode(SW_1, INPUT);
+    this->pcf.pinMode(SW_2, INPUT);
 
-    if (pcf.begin())
+    if (this->pcf.begin())
     {
-        pcf.digitalWrite(PWM_SW_CH_1, LOW);
-        pcf.digitalWrite(PWM_SW_CH_2, LOW);
-        pcf.digitalWrite(PWM_SW_CH_3, LOW);
-        pcf.digitalWrite(PWM_SW_CH_4, LOW);
-        pcf.digitalWrite(PWM_SW_CH_5, LOW);
-        pcf.digitalWrite(ARGB_SW, LOW);
+        this->pcf.digitalWrite(PWM_SW_CH_1, LOW);
+        this->pcf.digitalWrite(PWM_SW_CH_2, LOW);
+        this->pcf.digitalWrite(PWM_SW_CH_3, LOW);
+        this->pcf.digitalWrite(PWM_SW_CH_4, LOW);
+        this->pcf.digitalWrite(PWM_SW_CH_5, LOW);
+        this->pcf.digitalWrite(ARGB_SW, LOW);
         ready = true;
         Serial.println("SwitchSource Ready");
         return true;
@@ -46,6 +43,25 @@ void SwitchSource::toggle(InputSource source)
         return;
     }
     pcf.digitalWrite(source, LOW);
+}
+
+void SwitchSource::setSource(InputSource source, uint8_t state)
+{
+    this->pcf.digitalWrite(source, state);
+}
+
+void SwitchSource::initSource(uint8_t(& fanSource)[5], uint8_t argbSource)
+{
+    for (int i = 0; i < 5; i++)
+    {
+        this->setSource(i, fanSource[i]);
+    }
+    this->setSource(ARGB_SW, argbSource);
+}
+
+void SwitchSource::setSource(uint8_t pin, uint8_t state)
+{
+    this->pcf.digitalWrite(pin, state);
 }
 
 int SwitchSource::readInputState(InputSource source)
@@ -73,20 +89,21 @@ int SwitchSource::readSwitchState(SwSource source)
     return pcf.digitalRead(source);
 }
 
-void SwitchSource::readState(FanInputSource *fanInputSource)
+void SwitchSource::readState(uint8_t (&fanSource)[5], uint8_t &argbSource)
 {
+
     if (!ready)
     {
         notReady();
         return;
     }
 
-    fanInputSource->ch1 = pcf.digitalRead(PWM_SW_CH_1);
-    fanInputSource->ch2 = pcf.digitalRead(PWM_SW_CH_2);
-    fanInputSource->ch3 = pcf.digitalRead(PWM_SW_CH_3);
-    fanInputSource->ch4 = pcf.digitalRead(PWM_SW_CH_4);
-    fanInputSource->ch5 = pcf.digitalRead(PWM_SW_CH_5);
-    fanInputSource->argb = pcf.digitalRead(ARGB_SW);
+    fanSource[0] = pcf.digitalRead(PWM_SW_CH_1);
+    fanSource[1] = pcf.digitalRead(PWM_SW_CH_2);
+    fanSource[2] = pcf.digitalRead(PWM_SW_CH_3);
+    fanSource[3] = pcf.digitalRead(PWM_SW_CH_4);
+    fanSource[4] = pcf.digitalRead(PWM_SW_CH_5);
+    argbSource = pcf.digitalRead(ARGB_SW);
 }
 
 void SwitchSource::notReady()

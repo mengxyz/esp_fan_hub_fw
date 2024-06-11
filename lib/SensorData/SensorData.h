@@ -3,21 +3,11 @@
 
 struct FanData
 {
-    uint8_t freqs[5];
-    uint8_t duties[5];
-    uint8_t rpms[5];
+    uint8_t freq[5];
+    uint8_t duty[5];
+    uint8_t rpm[5];
 };
 
-
-struct FanInputSource
-{
-    uint8_t ch1;
-    uint8_t ch2;
-    uint8_t ch3;
-    uint8_t ch4;
-    uint8_t ch5;
-    uint8_t argb;
-};
 
 struct Ina219Data
 {
@@ -49,7 +39,6 @@ struct SensorData
     Sht40Data sht40;
     ThermistorData thermistor;
     VoltageData voltage;
-    FanInputSource fanInputSource;
     FanData fanData;
 };
 

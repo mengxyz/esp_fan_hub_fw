@@ -18,6 +18,8 @@ enum ThermisterChannel
 {
     CHANNEL_0 = 0,
     CHANNEL_1 = 1,
+    CHANNEL_2 = 2,
+    CHANNEL_3 = 3,
 };
 
 class Thermister
@@ -31,6 +33,8 @@ public:
     Thermister();
     void begin();
     float readTemp(ThermisterChannel channel);
+    float readResistance(ThermisterChannel channel);
+    float readAdc(ThermisterChannel channel);
 };
 
 #endif // THERMISTER_H

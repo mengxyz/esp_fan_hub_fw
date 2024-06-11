@@ -2,6 +2,8 @@
 
 FanControl *FanControl::instance = nullptr;
 
+const uint8_t FAN_PWM_CHANNELS[] = {PWM_CH_1, PWM_CH_2, PWM_CH_3, PWM_CH_4, PWM_CH_5};
+
 void IRAM_ATTR FanControl::TAC_1_ISR()
 {
   if (instance)
@@ -46,7 +48,7 @@ void IRAM_ATTR FanControl::BTN_UTIL_1_ISR()
 {
   if (instance)
   {
-    instance->setAllDuty(instance->pwm_duties[0] + 10);
+    instance->setAllDuty(instance->getDuty(0) + 10);
   }
 }
 
@@ -54,7 +56,7 @@ void IRAM_ATTR FanControl::BTN_UTIL_2_ISR()
 {
   if (instance)
   {
-    instance->setAllDuty(instance->pwm_duties[0] - 10);
+    instance->setAllDuty(instance->getDuty(0) - 10);
   }
 }
 
@@ -71,12 +73,6 @@ void FanControl::initPwmGenerator()
   ledcAttachPin(PIN_PWM_3, PWM_CH_3);
   ledcAttachPin(PIN_PWM_4, PWM_CH_4);
   ledcAttachPin(PIN_PWM_5, PWM_CH_4);
-
-  ledcWrite(PWM_CH_1, pwm_duties[0]);
-  ledcWrite(PWM_CH_2, pwm_duties[1]);
-  ledcWrite(PWM_CH_3, pwm_duties[2]);
-  ledcWrite(PWM_CH_4, pwm_duties[3]);
-  ledcWrite(PWM_CH_5, pwm_duties[4]);
 }
 
 void FanControl::initTachometer()
@@ -118,32 +114,44 @@ void FanControl::beginBtnUtils()
 
 void FanControl::setAllDuty(uint8_t duty)
 {
-  uint8_t newDuty = duty;
-  if (newDuty > 255)
+  if (duty > 255 || duty < 0)
   {
-    newDuty = 255;
-  }
-  if (newDuty < 0)
-  {
-    newDuty = 0;
+    return;
   }
   for (int i = 0; i < 5; i++)
   {
-    pwm_duties[i] = newDuty;
+    ledcWrite(FAN_PWM_CHANNELS[i], duty);
   }
-  ledcWrite(PWM_CH_1, pwm_duties[0]);
-  ledcWrite(PWM_CH_2, pwm_duties[1]);
-  ledcWrite(PWM_CH_3, pwm_duties[2]);
-  ledcWrite(PWM_CH_4, pwm_duties[3]);
-  ledcWrite(PWM_CH_5, pwm_duties[4]);
+}
+
+uint32_t FanControl::getDuty(uint8_t ch)
+{
+  return ledcRead(FAN_PWM_CHANNELS[ch]);
+}
+
+void FanControl::initAllDuty(uint8_t (&duty)[5])
+{
+  for (int i = 0; i < 5; i++)
+  {
+    ledcWrite(FAN_PWM_CHANNELS[i], duty[i]);
+  }
+}
+
+bool FanControl::setDuty(uint8_t ch, uint8_t duty)
+{
+  if (duty > 255 || duty < 0)
+  {
+    return false;
+  }
+  ledcWrite(FAN_PWM_CHANNELS[ch], duty);
+  return true;
 }
 
 void FanControl::readFanData(FanData *fanData)
 {
   for (int i = 0; i < 5; i++)
   {
-    fanData->freqs[i] = pwm_freqs[i];
-    fanData->duties[i] = pwm_duties[i];
+    fanData->freq[i] = pwm_freqs[i];
   }
 }
 

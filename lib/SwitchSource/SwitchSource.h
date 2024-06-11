@@ -7,6 +7,7 @@
 #include <Wire.h>
 #include <PCF8574.h>
 #include <SensorData.h>
+#include <DataStore.h>
 
 #define PCF8574_I2C_ADDRESS 0x39
 
@@ -19,6 +20,8 @@ enum InputSource
     PWM_SW_CH_5 = P0,
     ARGB_SW = P1,
 };
+
+const uint8_t FAN_INPUT_SOURCES[] = {P6, P5, P4, P2, P0};
 
 enum SwSource
 {
@@ -35,9 +38,12 @@ public:
     SwitchSource();
     bool begin();
     void toggle(InputSource source);
+    void setSource(InputSource source, uint8_t state);
+    void initSource(uint8_t (&fanSource)[5], uint8_t argbSource);
+    void setSource(uint8_t pin, uint8_t state);
     int readInputState(InputSource source);
     int readSwitchState(SwSource source);
-    void readState(FanInputSource *fanInputSource);
+    void readState(uint8_t (&fanSource)[5], uint8_t &argbSource);
 
 private:
     void notReady();

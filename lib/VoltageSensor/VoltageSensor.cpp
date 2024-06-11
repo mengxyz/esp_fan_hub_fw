@@ -1,7 +1,4 @@
-#include <Arduino.h>
-#include <Adafruit_INA219.h>
 #include <VoltageSensor.h>
-#include <SensorData.h>
 
 VoltageSensor::VoltageSensor() : inaFiveVolt(INA219_FIVE_VOLT_I2C_ADDRESS), inaTwelveVolt(INA219_TWELVE_VOLT_I2C_ADDRESS)
 {
@@ -16,6 +13,7 @@ void VoltageSensor::begin()
     else
     {
         Serial.println("VoltageSensor 5V ready");
+        inaFiveVolt.setCalibration_16V_10A();
         fiveVoltReady = true;
     }
     if (!inaTwelveVolt.begin(&Wire))
@@ -25,24 +23,31 @@ void VoltageSensor::begin()
     else
     {
         Serial.println("VoltageSensor 12V ready");
+        inaTwelveVolt.setCalibration_16V_10A();
         twelveVoltReady = true;
     }
 }
 
 void VoltageSensor::read5V(Ina219Data *data)
 {
-    if (fiveVoltReady) {
+    if (fiveVoltReady)
+    {
         readInaData(inaFiveVolt, data);
-    } else {
+    }
+    else
+    {
         Serial.println("VoltageSensor 5V not initialized");
     }
 }
 
 void VoltageSensor::read12V(Ina219Data *data)
 {
-    if (twelveVoltReady) {
+    if (twelveVoltReady)
+    {
         readInaData(inaTwelveVolt, data);
-    } else {
+    }
+    else
+    {
         Serial.println("VoltageSensor 12V not initialized");
     }
 }

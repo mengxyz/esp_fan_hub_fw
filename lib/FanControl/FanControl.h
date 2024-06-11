@@ -4,7 +4,6 @@
 #if !defined(FAN_CONTROL_H)
 #define FAN_CONTROL_H
 
-
 #define PIN_TAC_1 41
 #define PIN_TAC_2 40
 #define PIN_TAC_3 39
@@ -39,13 +38,12 @@ class FanControl
     static void IRAM_ATTR TAC_5_ISR();
     static void IRAM_ATTR BTN_UTIL_1_ISR();
     static void IRAM_ATTR BTN_UTIL_2_ISR();
-    static FanControl* instance;
+    static FanControl *instance;
+
 private:
     int pwm_freq;
     int pwm_res;
     uint8_t pwm_freqs[5] = {0, 0, 0, 0, 0};
-
-    uint8_t pwm_duties[5] = {PWM_DEFAULT_DUTY, PWM_DEFAULT_DUTY, PWM_DEFAULT_DUTY, PWM_DEFAULT_DUTY, PWM_DEFAULT_DUTY};
     void initPwmGenerator();
     void initTachometer();
 
@@ -54,6 +52,9 @@ public:
     void begin();
     void beginBtnUtils();
     void setAllDuty(uint8_t duty);
+    uint32_t getDuty(uint8_t ch);
+    void initAllDuty(uint8_t (&duty)[5]);
+    bool setDuty(uint8_t index, uint8_t duty);
     void readFanData(FanData *fanData);
     void resetFreqs();
 };

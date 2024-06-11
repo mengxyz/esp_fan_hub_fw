@@ -34,3 +34,13 @@ float Thermister::readTemp(ThermisterChannel channel)
     float tempC = calculateTemperature(resistance);
     return tempC += TEMP_OFFSET;
 }
+
+float Thermister::readResistance(ThermisterChannel channel)
+{
+    return 0.0f;
+}
+
+float Thermister::readAdc(ThermisterChannel channel)
+{
+    return this->readTemp(channel);
+}

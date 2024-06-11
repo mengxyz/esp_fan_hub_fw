@@ -9,26 +9,33 @@
 #include <AsyncTCP.h>
 #include <base64.h>
 #include <Adafruit_NeoPixel.h>
+#include <WS2812FX.h>
+#include <ConfigData.h>
+#include <ArduinoJson.h>
+#include <SwitchSource.h>
+#include <DataStore.h>
+#include <FanControl.h>
 
-typedef void (*WiFiCallback)();
-typedef void (*WiFiFailCallback)();
+class WiFiConfig
+{
+    static WiFiConfig *instance;
 
-// Web server and WebSocket
-extern AsyncWebServer server;
-extern AsyncWebSocket ws;
+private:
+    IPAddress local_ip;
+    IPAddress gateway;
+    IPAddress subnet;
+    IPAddress dns1;
+    IPAddress dns2;
+    void loadIpAddress();
 
-// IP address configuration
-extern IPAddress local_IP;
-extern IPAddress gateway;
-extern IPAddress subnet;
-extern IPAddress primaryDNS;
-extern IPAddress secondaryDNS;
-
-// Function declarations
-void initWifi(Adafruit_NeoPixel pixels);
-bool verifyAuth(String cpassword);
-bool authHandler(AsyncWebServerRequest *request);
-void handleWebSocketMessage(void *arg, uint8_t *data, size_t len);
-void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
+public:
+    AsyncWebServer server;
+    AsyncWebSocket ws;
+    DataStore *dataStore;
+    WiFiConfig(DataStore *dataStore);
+    bool verifyAuth(String password);
+    void begin(WS2812FX &argb, SwitchSource &swSource, DataStore &dataStore, FanControl &fanControl);
+    static bool authHandler(AsyncWebServerRequest *request);
+};
 
 #endif // WIFI_CONFIG_H
