@@ -15,8 +15,10 @@
 #include <SwitchSource.h>
 #include <DataStore.h>
 #include <FanControl.h>
+#include <BaseModule.h>
 
-class WiFiConfig
+
+class WiFiConfig : public BaseModule
 {
     static WiFiConfig *instance;
 
@@ -35,7 +37,9 @@ public:
     WiFiConfig(DataStore *dataStore);
     bool verifyAuth(String password);
     void begin(WS2812FX &argb, SwitchSource &swSource, DataStore &dataStore, FanControl &fanControl);
+    void begin(SwitchSource &swSource, DataStore &dataStore, FanControl &fanControl);
     static bool authHandler(AsyncWebServerRequest *request);
+    void service();
 };
 
 #endif // WIFI_CONFIG_H

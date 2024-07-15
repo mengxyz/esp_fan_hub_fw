@@ -34,10 +34,6 @@ void VoltageSensor::read5V(Ina219Data *data)
     {
         readInaData(inaFiveVolt, data);
     }
-    else
-    {
-        Serial.println("VoltageSensor 5V not initialized");
-    }
 }
 
 void VoltageSensor::read12V(Ina219Data *data)
@@ -46,15 +42,11 @@ void VoltageSensor::read12V(Ina219Data *data)
     {
         readInaData(inaTwelveVolt, data);
     }
-    else
-    {
-        Serial.println("VoltageSensor 12V not initialized");
-    }
 }
 
 void VoltageSensor::readInaData(Adafruit_INA219 &ina219, Ina219Data *data)
 {
     data->voltage = ina219.getBusVoltage_V();
-    data->current = ina219.getCurrent_mA();
-    data->power = ina219.getPower_mW();
+    data->current = ina219.getCurrent_mA() * 1000;
+    data->power = ina219.getPower_mW() / 20.0f;
 }

@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <SensorData.h>
+#include <driver/pcnt.h>
 
 #if !defined(FAN_CONTROL_H)
 #define FAN_CONTROL_H
@@ -9,6 +10,9 @@
 #define PIN_TAC_3 39
 #define PIN_TAC_4 38
 #define PIN_TAC_5 42
+
+const unsigned long FAN_DEBOUNCE_TIME = 1000;
+const int TAC_PINS[5] = {PIN_TAC_1, PIN_TAC_2, PIN_TAC_3, PIN_TAC_4, PIN_TAC_5};
 
 #define PIN_PWM_1 6
 #define PIN_PWM_2 5
@@ -36,6 +40,7 @@ class FanControl
     static void IRAM_ATTR TAC_3_ISR();
     static void IRAM_ATTR TAC_4_ISR();
     static void IRAM_ATTR TAC_5_ISR();
+    static void IRAM_ATTR pulseInterrupt(void *arg);
     static void IRAM_ATTR BTN_UTIL_1_ISR();
     static void IRAM_ATTR BTN_UTIL_2_ISR();
     static FanControl *instance;
@@ -43,9 +48,12 @@ class FanControl
 private:
     int pwm_freq;
     int pwm_res;
-    uint8_t pwm_freqs[5] = {0, 0, 0, 0, 0};
+    volatile int16_t pwm_freqs[5] = {0, 0, 0, 0, 0};
+    volatile int16_t pwm_freq_buffers[5] = {0, 0, 0, 0, 0};
+    volatile uint32_t lastCalcTime = 0;
     void initPwmGenerator();
     void initTachometer();
+    void initPcnt(uint8_t GPIO, pcnt_unit_t UNIT);
 
 public:
     FanControl(int pwm_freq = PWM_FREQ, int pwm_res = PWM_RES);
@@ -56,7 +64,11 @@ public:
     void initAllDuty(uint8_t (&duty)[5]);
     bool setDuty(uint8_t index, uint8_t duty);
     void readFanData(FanData *fanData);
+    void readFanDataPcnt(FanData *fanData);
     void resetFreqs();
+    void service();
+    void finalize();
+    void finalizePcnt();
 };
 
 #endif // FAN_CONTROL_H

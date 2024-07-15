@@ -2,8 +2,9 @@
 
 void DataStore::begin()
 {
-    this->initEEPROM();
-    this->loadConfigData();
+    setDefaultConfigData();
+    initEEPROM();
+    loadConfigData();
 }
 
 String DataStore::serializedSensorDataString()
@@ -17,14 +18,25 @@ String DataStore::serializedSensorDataString()
 void DataStore::serializedSensorDataDoc()
 {
     // Sht40Data
-    sensorDataDoc["sht40"]["temp"] = sensorData.sht40.temp;
-    sensorDataDoc["sht40"]["humi"] = sensorData.sht40.humi;
+    sensorDataDoc["boardTemp"]["temp"] = sensorData.boardTemp.temp;
+    sensorDataDoc["boardTemp"]["humi"] = sensorData.boardTemp.humi;
 
     // ThermistorData
-    sensorDataDoc["thermistor"]["thermistor1"] =
-        sensorData.thermistor.thermistor1;
-    sensorDataDoc["thermistor"]["thermistor2"] =
-        sensorData.thermistor.thermistor2;
+    sensorDataDoc["thermistor"]["ch0Adc"] =
+        sensorData.thermistor.ch0Adc;
+    sensorDataDoc["thermistor"]["ch0Resistance"] =
+        sensorData.thermistor.ch0Resistance;
+    sensorDataDoc["thermistor"]["ch0Voltage"] =
+        sensorData.thermistor.ch0Voltage;
+    sensorDataDoc["thermistor"]["ch0Temp"] = sensorData.thermistor.ch0Temp;
+
+    sensorDataDoc["thermistor"]["ch1Adc"] =
+        sensorData.thermistor.ch1Adc;
+    sensorDataDoc["thermistor"]["ch1Resistance"] =
+        sensorData.thermistor.ch1Resistance;
+    sensorDataDoc["thermistor"]["ch1Voltage"] =
+        sensorData.thermistor.ch1Voltage;
+    sensorDataDoc["thermistor"]["ch1Temp"] = sensorData.thermistor.ch1Temp;
 
     // VoltageData - Ina219Data
     sensorDataDoc["voltage"]["twelveVolt"]["current"] =
@@ -52,8 +64,14 @@ void DataStore::serializedSensorDataDoc()
     {
         sensorDataDoc["fanData"]["freqs"][i] = sensorData.fanData.freq[i];
         sensorDataDoc["fanData"]["duties"][i] = configData.fanDuty[i];
-        sensorDataDoc["fanData"]["rpms"][i] =
-            sensorData.fanData.freq[i] * 60 / 2;
+        sensorDataDoc["fanData"]["rpms"][i] = sensorData.fanData.rpm[i];
+    }
+
+    for (int i = 0; i < 3; i++)
+    {
+        sensorDataDoc["module"]["molex"][i]["current"] = sensorData.molexPower[i].current;
+        sensorDataDoc["module"]["molex"][i]["voltage"] = sensorData.molexPower[i].voltage;
+        sensorDataDoc["module"]["molex"][i]["power"] = sensorData.molexPower[i].power;
     }
 }
 
@@ -102,10 +120,52 @@ bool DataStore::initEEPROM()
 
 DataStore::DataStore() : ee(EEPROM_I2C_ADDRESS, I2C_DEVICESIZE_24LC256)
 {
-    sensorData.sht40.temp = 0.0;
-    sensorData.sht40.humi = 0.0;
-    sensorData.thermistor.thermistor1 = 0.0;
-    sensorData.thermistor.thermistor2 = 0.0;
+}
+
+String DataStore::getSensorDataJson() { return serializedSensorDataString(); }
+
+void DataStore::printSensorData()
+{
+    serializedSensorDataDoc();
+    Serial.println();
+    serializeJsonPretty(sensorDataDoc, Serial);
+    Serial.println();
+}
+
+void DataStore::setThermisterData(Thermister &thermister)
+{
+    thermister.readData(ThermisterChannel::CHANNEL_0, sensorData.thermistor.ch0Adc, sensorData.thermistor.ch0Voltage, sensorData.thermistor.ch0Temp, sensorData.thermistor.ch0Resistance);
+    thermister.readData(ThermisterChannel::CHANNEL_1, sensorData.thermistor.ch1Adc, sensorData.thermistor.ch1Voltage, sensorData.thermistor.ch1Temp, sensorData.thermistor.ch1Resistance);
+}
+
+void DataStore::setVoltageSensorData(VoltageSensor &voltageSensor)
+{
+    voltageSensor.read5V(&sensorData.voltage.fiveVolt);
+    voltageSensor.read12V(&sensorData.voltage.twelveVolt);
+}
+
+void DataStore::loadConfigData()
+{
+    Serial.println("Loading config data");
+    ee.readBlock(0, (uint8_t *)&configData, sizeof(configData));
+    Serial.println("Config data loaded");
+    serializedConfigDataDoc();
+    serializeJsonPretty(configDataDoc, Serial);
+    Serial.println("");
+}
+
+void DataStore::setDefaultConfigData()
+{
+    sensorData.boardTemp.temp = 0.0;
+    sensorData.boardTemp.humi = 0.0;
+    sensorData.thermistor.ch0Adc = 0.0;
+    sensorData.thermistor.ch0Resistance = 0.0;
+    sensorData.thermistor.ch0Voltage = 0.0;
+    sensorData.thermistor.ch0Temp = 0.0;
+    sensorData.thermistor.ch1Adc = 0.0;
+    sensorData.thermistor.ch1Resistance = 0.0;
+    sensorData.thermistor.ch1Voltage = 0.0;
+    sensorData.thermistor.ch1Temp = 0.0;
     sensorData.voltage.twelveVolt.current = 0.0;
     sensorData.voltage.twelveVolt.voltage = 0.0;
     sensorData.voltage.fiveVolt.current = 0.0;
@@ -128,59 +188,24 @@ DataStore::DataStore() : ee(EEPROM_I2C_ADDRESS, I2C_DEVICESIZE_24LC256)
     configData.argb.speed = 1000;
     configData.argb.brightness = 255;
     configData.argb.source = LOW;
-}
 
-String DataStore::getSensorDataJson() { return serializedSensorDataString(); }
-
-void DataStore::printSensorData()
-{
-    serializedSensorDataDoc();
-    Serial.println();
-    serializeJsonPretty(sensorDataDoc, Serial);
-    Serial.println();
-}
-
-void DataStore::setSht40Data(SensirionI2cSht4x &sht)
-{
-    float temp = 0.0;
-    float humi = 0.0;
-    sht.measureLowestPrecision(temp, humi);
-    sensorData.sht40.temp = temp;
-    sensorData.sht40.humi = humi;
-}
-
-void DataStore::setThermisterData(Thermister &thermister)
-{
-    sensorData.thermistor.thermistor1 =
-        thermister.readAdc(ThermisterChannel::CHANNEL_0);
-    sensorData.thermistor.thermistor2 =
-        thermister.readAdc(ThermisterChannel::CHANNEL_1);
-}
-
-void DataStore::setVoltageSensorData(VoltageSensor &voltageSensor)
-{
-    voltageSensor.read5V(&sensorData.voltage.fiveVolt);
-    voltageSensor.read12V(&sensorData.voltage.twelveVolt);
-}
-
-void DataStore::setFanData(FanControl &fanControl)
-{
-    fanControl.readFanData(&sensorData.fanData);
-}
-
-void DataStore::loadConfigData()
-{
-    Serial.println("Loading config data");
-    this->ee.readBlock(0, (uint8_t *)&configData, sizeof(configData));
-    Serial.println("Config data loaded");
-    this->serializedConfigDataDoc();
-    serializeJsonPretty(configDataDoc, Serial);
-    Serial.println("");
+    for (int i = 0; i < 3; i++)
+    {
+        sensorData.molexPower[i].current = 0.0;
+        sensorData.molexPower[i].voltage = 0.0;
+        sensorData.molexPower[i].power = 0.0;
+    }
 }
 
 void DataStore::saveConfigData()
 {
-    this->ee.setBlock(0, 0, sizeof(configData));
-    this->ee.writeBlock(0, (uint8_t *)&configData, sizeof(configData));
+    ee.setBlock(0, 0, sizeof(configData));
+    ee.writeBlock(0, (uint8_t *)&configData, sizeof(configData));
     Serial.println("Config data saved");
+}
+
+void DataStore::saveDefaultConfigData()
+{
+    setDefaultConfigData();
+    saveConfigData();
 }

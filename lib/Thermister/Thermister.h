@@ -1,16 +1,16 @@
-#if !defined(THERMISTER_H)
+#ifndef THERMISTER_H
 #define THERMISTER_H
 
 #include <Adafruit_ADS1X15.h>
 #include <Arduino.h>
 #include <Wire.h>
 
-#define R0 10000.0           // Resistor value in ohms
-#define BETA 3950.0         // Beta value of the NTC thermistor
-#define T0 298.15           // Temperature in Kelvin at R0 (25°C)
-#define ADC_REF_VOLTAGE 5.0 // Reference voltage for ADC
-#define ADJUST_ADC_VALUE 0  // Reference voltage for ADC
-#define TEMP_OFFSET -11     // Offset for temperature readings
+const float nominal_resistance = 103000.0; // Nominal resistance at 25 degrees C
+const float nominal_temperature = 298.15;  // 25 degrees C in Kelvin
+const float b_value = 4250.0;              // Beta value of the NTC thermistor
+const float series_resistor = 100000.0;    // Series resistor value
+const float MAX_ADC_VALUE = 32767.0;
+const float resistance_offset = -0.0;
 
 #define ADS1115_I2C_ADDRESS 0x48
 
@@ -26,13 +26,14 @@ class Thermister
 {
 private:
     bool ready = false;
-    float calculateTemperature(float resistance);
+    float calculateTemperature(ThermisterChannel channel, float resistance);
 
 public:
     Adafruit_ADS1115 ads;
     Thermister();
     void begin();
     float readTemp(ThermisterChannel channel);
+    void readData(ThermisterChannel channel, int16_t &adc_value, float &voltage, float &tempC, float &resistance);
     float readResistance(ThermisterChannel channel);
     float readAdc(ThermisterChannel channel);
 };

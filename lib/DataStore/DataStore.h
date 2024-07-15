@@ -25,6 +25,7 @@ private:
     JsonDocument sensorDataDoc;
     JsonDocument configDataDoc;
     void loadConfigData();
+    void setDefaultConfigData();
 
 public:
     DataStore();
@@ -33,11 +34,10 @@ public:
     String getSensorDataJson();
     void begin();
     void printSensorData();
-    void setSht40Data(SensirionI2cSht4x &sht);
     void setThermisterData(Thermister &thermister);
     void setVoltageSensorData(VoltageSensor &voltageSensor);
-    void setFanData(FanControl &fanControl);
     void saveConfigData();
+    void saveDefaultConfigData();
 };
 
 #endif // DATA_STORE_H

@@ -5,7 +5,7 @@ struct FanData
 {
     uint8_t freq[5];
     uint8_t duty[5];
-    uint8_t rpm[5];
+    uint16_t rpm[5];
 };
 
 
@@ -22,7 +22,7 @@ struct VoltageData
     Ina219Data fiveVolt;
 };
 
-struct Sht40Data
+struct BoardTempData
 {
     float temp;
     float humi;
@@ -30,16 +30,23 @@ struct Sht40Data
 
 struct ThermistorData
 {
-    float thermistor1;
-    float thermistor2;
+    int16_t ch0Adc;
+    int16_t ch1Adc;
+    float ch0Resistance;
+    float ch1Resistance;
+    float ch0Voltage;
+    float ch1Voltage;
+    float ch0Temp;
+    float ch1Temp;
 };
 
 struct SensorData
 {
-    Sht40Data sht40;
+    BoardTempData boardTemp;
     ThermistorData thermistor;
     VoltageData voltage;
     FanData fanData;
+    Ina219Data molexPower[3];
 };
 
 #endif // SENSOR_DATA_H
