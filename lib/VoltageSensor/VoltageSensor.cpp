@@ -1,8 +1,9 @@
 #include <VoltageSensor.h>
 
-VoltageSensor::VoltageSensor() : inaFiveVolt(INA219_FIVE_VOLT_I2C_ADDRESS), inaTwelveVolt(INA219_TWELVE_VOLT_I2C_ADDRESS)
+VoltageSensor::VoltageSensor(uint8_t fiveVoltAddr, uint8_t twelveVoltAddr) : inaFiveVolt(fiveVoltAddr), inaTwelveVolt(twelveVoltAddr)
 {
 }
+
 
 void VoltageSensor::begin()
 {
@@ -13,7 +14,7 @@ void VoltageSensor::begin()
     else
     {
         Serial.println("VoltageSensor 5V ready");
-        inaFiveVolt.setCalibration_16V_10A();
+        inaFiveVolt.setCalibration(5, 0.05, SHUNT_RESISTANCE);
         fiveVoltReady = true;
     }
     if (!inaTwelveVolt.begin(&Wire))
@@ -23,7 +24,7 @@ void VoltageSensor::begin()
     else
     {
         Serial.println("VoltageSensor 12V ready");
-        inaTwelveVolt.setCalibration_16V_10A();
+        inaTwelveVolt.setCalibration(VOLTAGE, SHUNT_GAIN, SHUNT_RESISTANCE);
         twelveVoltReady = true;
     }
 }

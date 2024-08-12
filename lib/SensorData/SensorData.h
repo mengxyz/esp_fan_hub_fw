@@ -26,6 +26,7 @@ struct BoardTempData
 {
     float temp;
     float humi;
+    float cpuTemp;
 };
 
 struct ThermistorData
@@ -40,6 +41,12 @@ struct ThermistorData
     float ch1Temp;
 };
 
+struct RamData
+{
+    uint32_t free;
+    uint32_t total;
+};
+
 struct SensorData
 {
     BoardTempData boardTemp;
@@ -47,6 +54,8 @@ struct SensorData
     VoltageData voltage;
     FanData fanData;
     Ina219Data molexPower[3];
+    RamData ram;
+    RamData psram;
 };
 
 #endif // SENSOR_DATA_H

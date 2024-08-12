@@ -170,6 +170,7 @@ public:
   void setCalibration_32V_1A();
   void setCalibration_16V_10A();
   void setCalibration_16V_400mA();
+  void setCalibration(float VBUS_MAX, float VSHUNT_MAX, float RSHUNT);
   float getBusVoltage_V();
   float getShuntVoltage_mV();
   float getCurrent_mA();

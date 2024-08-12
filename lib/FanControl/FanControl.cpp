@@ -50,14 +50,12 @@ void IRAM_ATTR FanControl::pulseInterrupt(void *arg)
   if (!instance)
     return;
   int fanIndex = (int)arg;
-  // unsigned long currentTime = micros();
-  // unsigned long _timeSinceLastPulse = currentTime - instance->timeSinceLastPulse[fanIndex];
-
-  // if (_timeSinceLastPulse > FAN_DEBOUNCE_TIME)
-  // {
-  instance->pwm_freqs[fanIndex]++;
-  // instance->timeSinceLastPulse[fanIndex] = currentTime;
-  // }
+  unsigned long currentTime = millis();
+  if (currentTime - instance->last_pulse_times[fanIndex] >= 100)
+  {
+    instance->pwm_freqs[fanIndex]++;
+  }
+  instance->last_pulse_times[fanIndex] = currentTime;
 }
 
 void IRAM_ATTR FanControl::BTN_UTIL_1_ISR()
@@ -177,21 +175,26 @@ void FanControl::finalizePcnt()
     pwm_freq_buffers[i] = cache;
     pcnt_counter_clear(PCNT_UNITS[i]);
   }
+
   for (int i = 0; i < 4; i++)
   {
     pcnt_counter_resume(PCNT_UNITS[i]);
   }
+  
+  pwm_freq_buffers[4] = pwm_freqs[4];
+  pwm_freqs[4] = 0;
 }
 
 void FanControl::begin()
 {
-  // initTachometer();
   initPwmGenerator();
   Serial.println("FanControl ready");
   for (int i = 0; i < 4; i++)
   {
     initPcnt(TAC_PINS[i], PCNT_UNITS[i]);
   }
+  pinMode(TAC_PINS[4], INPUT_PULLUP);
+  attachInterruptArg(digitalPinToInterrupt(TAC_PINS[4]), pulseInterrupt, (void *)4, FALLING);
 }
 
 void FanControl::beginBtnUtils()

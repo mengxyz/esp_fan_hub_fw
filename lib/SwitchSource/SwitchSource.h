@@ -9,8 +9,6 @@
 #include <SensorData.h>
 #include <DataStore.h>
 
-#define PCF8574_I2C_ADDRESS 0x39
-
 enum InputSource
 {
     PWM_SW_CH_1 = P6,
@@ -35,7 +33,7 @@ class SwitchSource
 
 public:
     PCF8574 pcf;
-    SwitchSource();
+    SwitchSource(uint8_t address = 0x39);
     bool begin();
     void toggle(InputSource source);
     void setSource(InputSource source, uint8_t state);

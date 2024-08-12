@@ -17,7 +17,13 @@ const int TAC_PINS[5] = {PIN_TAC_1, PIN_TAC_2, PIN_TAC_3, PIN_TAC_4, PIN_TAC_5};
 #define PIN_PWM_1 6
 #define PIN_PWM_2 5
 #define PIN_PWM_3 4
+
+#ifdef OLD_VERSION
 #define PIN_PWM_4 20
+#else
+#define PIN_PWM_4 11
+#endif
+
 #define PIN_PWM_5 19
 
 #define PWM_CH_1 0
@@ -50,7 +56,8 @@ private:
     int pwm_res;
     volatile int16_t pwm_freqs[5] = {0, 0, 0, 0, 0};
     volatile int16_t pwm_freq_buffers[5] = {0, 0, 0, 0, 0};
-    volatile uint32_t lastCalcTime = 0;
+    volatile unsigned long last_pulse_times[5] = {0, 0, 0, 0, 0};
+    volatile unsigned long lastCalcTime = 0;
     void initPwmGenerator();
     void initTachometer();
     void initPcnt(uint8_t GPIO, pcnt_unit_t UNIT);

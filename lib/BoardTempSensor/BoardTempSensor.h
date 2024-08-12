@@ -2,31 +2,18 @@
 #define BOARDTEMPSENSOR_H
 
 #include <BaseModule.h>
-#include <SensirionI2cSht3x.h>
-#include <SensirionI2cSht4x.h>
-
-enum SensorType
-{
-    SHT3X = 0,
-    SHT4X = 1
-};
-
+#include <SHTSensor.h>
 
 class BoardTempSensor : public BaseModule
 {
 private:
     char errorMessage[64];
     int16_t error;
-    SensorType sensorType;
-    SensirionI2cSht3x sht3x;
-    SensirionI2cSht4x sht4x;
-    uint32_t serialNumber = 0u;
-    bool initSht3x();
-    bool initSht4x();
+    SHTSensor sht;
 public:
-    BoardTempSensor();
+    BoardTempSensor(SHTSensor::SHTSensorType sensorType);
     void begin();
-    void readSensors(float &temp, float &humi);
+    void readSensors(float &temp, float &humi, float &cpuTemp);
 };
 
 

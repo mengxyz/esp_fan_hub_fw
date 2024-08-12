@@ -6,14 +6,12 @@
 #include <BaseModule.h>
 #include <SensorData.h>
 
-#define INA3221_I2C_ADDRESS 0x43 // I2C address
-
 class MolexPowerMeter : public BaseModule
 {
 private:
     INA3221 ina3221;
 public:
-    MolexPowerMeter();
+    MolexPowerMeter(uint8_t address = 0x43);
     void begin();
     void readPower(Ina219Data (&data)[3]);
 };

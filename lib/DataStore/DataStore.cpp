@@ -1,7 +1,15 @@
 #include <DataStore.h>
 
+DataStore *DataStore::instance = nullptr;
+
 void DataStore::begin()
 {
+    if(resetPin != -1) {
+        Serial.println("DataStore reset pin: " + String(resetPin));
+        pinMode(resetPin, INPUT_PULLUP);
+        attachInterrupt(digitalPinToInterrupt(resetPin), RESET_FLAG, FALLING);
+        delay(10);
+    }
     setDefaultConfigData();
     initEEPROM();
     loadConfigData();
@@ -17,9 +25,15 @@ String DataStore::serializedSensorDataString()
 
 void DataStore::serializedSensorDataDoc()
 {
+    // RAM
+    sensorDataDoc["ram"]["free"] = ESP.getFreeHeap();
+    sensorDataDoc["ram"]["total"] = ESP.getHeapSize();
+    sensorDataDoc["psram"]["total"] = ESP.getPsramSize();
+    sensorDataDoc["psram"]["free"] = ESP.getFreePsram();
     // Sht40Data
     sensorDataDoc["boardTemp"]["temp"] = sensorData.boardTemp.temp;
     sensorDataDoc["boardTemp"]["humi"] = sensorData.boardTemp.humi;
+    sensorDataDoc["boardTemp"]["cpuTemp"] = sensorData.boardTemp.cpuTemp;
 
     // ThermistorData
     sensorDataDoc["thermistor"]["ch0Adc"] =
@@ -118,8 +132,10 @@ bool DataStore::initEEPROM()
     return true;
 }
 
-DataStore::DataStore() : ee(EEPROM_I2C_ADDRESS, I2C_DEVICESIZE_24LC256)
+DataStore::DataStore(uint8_t eeAddress, int eeSize, uint8_t resetPin) : ee(eeAddress, eeSize)
 {
+    this->resetPin = resetPin;
+    instance = this;
 }
 
 String DataStore::getSensorDataJson() { return serializedSensorDataString(); }
@@ -156,8 +172,14 @@ void DataStore::loadConfigData()
 
 void DataStore::setDefaultConfigData()
 {
+    sensorData.ram.free = 0;
+    sensorData.ram.total = 0;
+    sensorData.psram.free = 0;
+    sensorData.psram.total = 0;
+
     sensorData.boardTemp.temp = 0.0;
     sensorData.boardTemp.humi = 0.0;
+    sensorData.boardTemp.cpuTemp = 0.0;
     sensorData.thermistor.ch0Adc = 0.0;
     sensorData.thermistor.ch0Resistance = 0.0;
     sensorData.thermistor.ch0Voltage = 0.0;
@@ -195,6 +217,7 @@ void DataStore::setDefaultConfigData()
         sensorData.molexPower[i].voltage = 0.0;
         sensorData.molexPower[i].power = 0.0;
     }
+    sensorDataDoc["fw_version"] = FW_VERSION;
 }
 
 void DataStore::saveConfigData()
@@ -208,4 +231,22 @@ void DataStore::saveDefaultConfigData()
 {
     setDefaultConfigData();
     saveConfigData();
+}
+
+void IRAM_ATTR DataStore::RESET_FLAG()
+{
+  if (instance)
+  {
+    instance->resetFlag = true;
+  }
+}
+
+void DataStore::service()
+{
+    if (resetFlag)
+    {
+        resetFlag = false;
+        saveDefaultConfigData();
+        ESP.restart();
+    }
 }

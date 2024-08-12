@@ -530,7 +530,7 @@ void Adafruit_INA219::setCalibration_16V_10A()
   // 5. Compute the calibration register
   // Cal = trunc (0.04096 / (Current_LSB * RSHUNT))
   // Cal = 819 (0x0333)
-  ina219_calValue = 819;
+  ina219_calValue = 8192;
 
   // 6. Calculate the power LSB
   // PowerLSB = 20 * CurrentLSB
@@ -572,6 +572,68 @@ void Adafruit_INA219::setCalibration_16V_10A()
                     INA219_CONFIG_BADCRES_12BIT |
                     INA219_CONFIG_SADCRES_12BIT_1S_532US |
                     INA219_CONFIG_MODE_SANDBVOLT_CONTINUOUS;
+  Adafruit_BusIO_Register config_reg =
+      Adafruit_BusIO_Register(i2c_dev, INA219_REG_CONFIG, 2, MSBFIRST);
+  _success = config_reg.write(config, 2);
+}
+
+
+void Adafruit_INA219::setCalibration(float VBUS_MAX, float VSHUNT_MAX, float RSHUNT)
+{
+  // 1. Determine max possible current
+  float MaxPossible_I = VSHUNT_MAX / RSHUNT;
+
+  // 2. Determine max expected current (we'll keep this at 10A, but you could make it a parameter too)
+  float MaxExpected_I = 10.0;
+
+  // 3. Calculate possible range of LSBs (Min = 15-bit, Max = 12-bit)
+  float MinimumLSB = MaxExpected_I / 32767;
+  float MaximumLSB = MaxExpected_I / 4096;
+
+  // 4. Choose an LSB between the min and max values
+  float CurrentLSB = 0.001; // 1mA per bit
+
+  // 5. Compute the calibration register
+  ina219_calValue = (uint16_t)((0.04096 / (CurrentLSB * RSHUNT)));
+
+  // 6. Calculate the power LSB
+  float PowerLSB = 20 * CurrentLSB;
+
+  // 7. Compute the maximum current and shunt voltage values before overflow
+  float Max_Current = CurrentLSB * 32767;
+  float Max_Current_Before_Overflow = min(Max_Current, MaxPossible_I);
+  float Max_ShuntVoltage_Before_Overflow = min(Max_Current_Before_Overflow * RSHUNT, VSHUNT_MAX);
+
+  // 8. Compute the Maximum Power
+  float MaximumPower = Max_Current_Before_Overflow * VBUS_MAX;
+
+  // Set multipliers to convert raw current/power values
+  ina219_currentDivider_mA = (uint32_t)(1 / CurrentLSB);
+  ina219_powerMultiplier_mW = PowerLSB * 1000;
+
+  // Set Calibration register to 'Cal' calculated above
+  Adafruit_BusIO_Register calibration_reg =
+      Adafruit_BusIO_Register(i2c_dev, INA219_REG_CALIBRATION, 2, MSBFIRST);
+  calibration_reg.write(ina219_calValue, 2);
+
+  // Set Config register to take into account the settings above
+  uint16_t config = INA219_CONFIG_BVOLTAGERANGE_16V;
+  
+  // Set gain based on VSHUNT_MAX
+  if (VSHUNT_MAX <= 0.04) {
+    config |= INA219_CONFIG_GAIN_1_40MV;
+  } else if (VSHUNT_MAX <= 0.08) {
+    config |= INA219_CONFIG_GAIN_2_80MV;
+  } else if (VSHUNT_MAX <= 0.16) {
+    config |= INA219_CONFIG_GAIN_4_160MV;
+  } else {
+    config |= INA219_CONFIG_GAIN_8_320MV;
+  }
+
+  config |= INA219_CONFIG_BADCRES_12BIT |
+            INA219_CONFIG_SADCRES_12BIT_1S_532US |
+            INA219_CONFIG_MODE_SANDBVOLT_CONTINUOUS;
+
   Adafruit_BusIO_Register config_reg =
       Adafruit_BusIO_Register(i2c_dev, INA219_REG_CONFIG, 2, MSBFIRST);
   _success = config_reg.write(config, 2);

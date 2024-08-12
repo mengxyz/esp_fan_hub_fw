@@ -18,7 +18,15 @@
     "wire.h": "c",
     "bitset": "cpp",
     "algorithm": "cpp",
-    "memory_resource": "cpp"
+    "memory_resource": "cpp",
+    "ostream": "cpp",
+    "chrono": "cpp",
+    "functional": "cpp",
+    "istream": "cpp",
+    "ratio": "cpp",
+    "tuple": "cpp",
+    "type_traits": "cpp",
+    "cinttypes": "cpp"
   },
   // "[c]": {
   //   "editor.defaultFormatter": "ms-vscode.cpptools"

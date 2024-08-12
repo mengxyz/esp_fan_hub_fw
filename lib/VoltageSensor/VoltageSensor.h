@@ -4,9 +4,9 @@
 #if !defined(VOLTAGE_SENSOR_H)
 #define VOLTAGE_SENSOR_H
 
-#define INA219_FIVE_VOLT_I2C_ADDRESS 0x45
-// #define INA219_FIVE_VOLT_I2C_ADDRESS 0x40
-#define INA219_TWELVE_VOLT_I2C_ADDRESS 0x41
+#define VOLTAGE 16.0
+#define SHUNT_GAIN 0.16
+#define SHUNT_RESISTANCE 0.005
 
 class VoltageSensor
 {
@@ -18,7 +18,7 @@ private:
     void readInaData(Adafruit_INA219 &ina219, Ina219Data *data);
 
 public:
-    VoltageSensor();
+    VoltageSensor(uint8_t fiveVoltAddr = 0x45, uint8_t twelveVoltAddr = 0x41);
     void begin();
     void read5V(Ina219Data *data);
     void read12V(Ina219Data *data);

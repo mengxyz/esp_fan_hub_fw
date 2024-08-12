@@ -42,6 +42,10 @@ extern const char *env_dns1;
 extern const char *env_dns2;
 #endif
 
+#ifdef DNS2
+extern const char *env_dns2;
+#endif
+
 struct ArgbConfig
 {
     uint8_t mode;

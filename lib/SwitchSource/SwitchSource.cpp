@@ -74,7 +74,7 @@ int SwitchSource::readInputState(InputSource source)
     return pcf.digitalRead(source);
 }
 
-SwitchSource::SwitchSource() : pcf(PCF8574_I2C_ADDRESS)
+SwitchSource::SwitchSource(uint8_t address) : pcf(address)
 {
 }
 

@@ -1,6 +1,6 @@
 #include <MolexPowerMeter.h>
 
-MolexPowerMeter::MolexPowerMeter() : ina3221(INA3221_I2C_ADDRESS, &Wire)
+MolexPowerMeter::MolexPowerMeter(uint8_t address): ina3221(address, &Wire)
 {
 }
 

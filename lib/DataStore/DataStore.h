@@ -2,7 +2,6 @@
 #include <SensorData.h>
 #include <I2C_eeprom.h>
 #include <ArduinoJson.h>
-#include <SensirionI2cSht4x.h>
 #include <Thermister.h>
 #include <VoltageSensor.h>
 #include <FanControl.h>
@@ -11,10 +10,10 @@
 #if !defined(DATA_STORE_H)
 #define DATA_STORE_H
 
-#define EEPROM_I2C_ADDRESS 0x50
-
 class DataStore
 {
+    static void IRAM_ATTR RESET_FLAG();
+    static DataStore *instance;
 private:
     String serializedSensorDataString();
     void serializedSensorDataDoc();
@@ -22,13 +21,15 @@ private:
     bool initEEPROM();
     I2C_eeprom ee;
     bool eepromReady = false;
+    uint8_t resetPin;
+    bool resetFlag = false;
     JsonDocument sensorDataDoc;
     JsonDocument configDataDoc;
     void loadConfigData();
     void setDefaultConfigData();
 
 public:
-    DataStore();
+    DataStore(uint8_t eeAddress = 0x50, int eeSize = I2C_DEVICESIZE_24LC256, uint8_t resetPin = -1);
     SensorData sensorData;
     ConfigData configData;
     String getSensorDataJson();
@@ -38,6 +39,7 @@ public:
     void setVoltageSensorData(VoltageSensor &voltageSensor);
     void saveConfigData();
     void saveDefaultConfigData();
+    void service();
 };
 
 #endif // DATA_STORE_H

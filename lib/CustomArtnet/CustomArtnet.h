@@ -47,3 +47,10 @@
 //     memset(universesReceived, 0, maxUniverses);
 //   }
 // }
+
+#if !defined(CUSTOM_ARTNET_H)
+#define CUSTOM_ARTNET_H
+
+
+
+#endif // CUSTOM_ARTNET_H
