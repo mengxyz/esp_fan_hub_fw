@@ -4,10 +4,10 @@ DataStore *DataStore::instance = nullptr;
 
 void DataStore::begin()
 {
-    if(resetPin != -1) {
-        Serial.println("DataStore reset pin: " + String(resetPin));
+    if (resetPin != -1)
+    {
         pinMode(resetPin, INPUT_PULLUP);
-        attachInterrupt(digitalPinToInterrupt(resetPin), RESET_FLAG, FALLING);
+        attachInterrupt(digitalPinToInterrupt(resetPin), RESET_FLAG, CHANGE);
         delay(10);
     }
     setDefaultConfigData();
@@ -21,6 +21,20 @@ String DataStore::serializedSensorDataString()
     String output;
     serializeJson(sensorDataDoc, output);
     return output;
+}
+
+String DataStore::serializedConfigDataString()
+{
+    serializedConfigDataDoc();
+    String output;
+    serializeJson(configDataDoc, output);
+    return output;
+}
+
+void DataStore::serializedSensorDataBuffer(char *buf)
+{
+    serializedSensorDataDoc();
+    serializeJson(sensorDataDoc, buf, 256);
 }
 
 void DataStore::serializedSensorDataDoc()
@@ -100,6 +114,7 @@ void DataStore::serializedConfigDataDoc()
     configDataDoc["dns2"] = configData.dns2;
     configDataDoc["auth_user"] = configData.auth_user;
     configDataDoc["auth_password"] = configData.auth_password;
+    configDataDoc["mdns"] = configData.mdns;
     for (int i = 0; i < 5; i++)
     {
         if (configData.fanSource[i] == 0)
@@ -117,6 +132,7 @@ void DataStore::serializedConfigDataDoc()
     configDataDoc["argb"]["speed"] = configData.argb.speed;
     configDataDoc["argb"]["brightness"] = configData.argb.brightness;
     configDataDoc["argb"]["source"] = configData.argb.source;
+    configDataDoc["argb"]["color"] = configData.argb.color;
 }
 
 bool DataStore::initEEPROM()
@@ -139,6 +155,11 @@ DataStore::DataStore(uint8_t eeAddress, int eeSize, uint8_t resetPin) : ee(eeAdd
 }
 
 String DataStore::getSensorDataJson() { return serializedSensorDataString(); }
+
+String DataStore::getConfigDataJson()
+{
+    return serializedConfigDataString();
+}
 
 void DataStore::printSensorData()
 {
@@ -202,6 +223,8 @@ void DataStore::setDefaultConfigData()
     strncpy(configData.dns2, env_dns2, sizeof(configData.dns2));
     strncpy(configData.auth_user, env_auth_user, sizeof(configData.auth_user));
     strncpy(configData.auth_password, env_auth_password, sizeof(configData.auth_password));
+    strncpy(configData.mdns, env_mdns, sizeof(configData.mdns));
+
     for (int i = 0; i < 5; i++)
     {
         configData.fanSource[i] = 0;
@@ -210,6 +233,7 @@ void DataStore::setDefaultConfigData()
     configData.argb.speed = 1000;
     configData.argb.brightness = 255;
     configData.argb.source = LOW;
+    configData.argb.color = 1179392;
 
     for (int i = 0; i < 3; i++)
     {
@@ -235,18 +259,29 @@ void DataStore::saveDefaultConfigData()
 
 void IRAM_ATTR DataStore::RESET_FLAG()
 {
-  if (instance)
-  {
-    instance->resetFlag = true;
-  }
+    if (!instance)
+        return;
+    if (digitalRead(instance->resetPin) == LOW)
+    {
+        instance->resetPressTime = millis();
+        instance->resetFlag = true;
+    }
+    else
+    {
+        instance->resetFlag = false;
+    }
 }
 
 void DataStore::service()
 {
     if (resetFlag)
     {
-        resetFlag = false;
-        saveDefaultConfigData();
-        ESP.restart();
+        unsigned long currentMillis = millis();
+        if (currentMillis - resetPressTime > resetThreshold)
+        {
+            saveDefaultConfigData();
+            ESP.restart();
+            resetFlag = false;
+        }
     }
 }

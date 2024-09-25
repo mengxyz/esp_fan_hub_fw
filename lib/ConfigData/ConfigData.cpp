@@ -38,3 +38,7 @@ const char *env_dns1 = STR(DNS1);
 #ifdef DNS2
 const char *env_dns2 = STR(DNS2);
 #endif
+
+#ifdef MDNS_NAME
+const char *env_mdns = STR(MDNS_NAME);
+#endif

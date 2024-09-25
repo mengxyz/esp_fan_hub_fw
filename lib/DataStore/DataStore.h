@@ -10,19 +10,25 @@
 #if !defined(DATA_STORE_H)
 #define DATA_STORE_H
 
+#define RESET_THRESHOLD 5000
+
 class DataStore
 {
     static void IRAM_ATTR RESET_FLAG();
     static DataStore *instance;
+
 private:
     String serializedSensorDataString();
+    String serializedConfigDataString();
     void serializedSensorDataDoc();
     void serializedConfigDataDoc();
     bool initEEPROM();
     I2C_eeprom ee;
     bool eepromReady = false;
     uint8_t resetPin;
-    bool resetFlag = false;
+    volatile bool resetFlag = false;
+    volatile unsigned long resetPressTime = 0;
+    volatile uint16_t resetThreshold = RESET_THRESHOLD;
     JsonDocument sensorDataDoc;
     JsonDocument configDataDoc;
     void loadConfigData();
@@ -33,6 +39,8 @@ public:
     SensorData sensorData;
     ConfigData configData;
     String getSensorDataJson();
+    String getConfigDataJson();
+    void serializedSensorDataBuffer(char *buf);
     void begin();
     void printSensorData();
     void setThermisterData(Thermister &thermister);

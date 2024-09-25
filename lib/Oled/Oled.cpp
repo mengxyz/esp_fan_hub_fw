@@ -78,6 +78,44 @@ void Oled::displayData(SensorData &sensorData)
     }
 
     // Draw progress bar at the bottom
+    if (rtc != NULL)
+    {
+        // draw time upper progress
+        DateTime now = rtc->now();
+    }
+
+    // if (rtc != NULL)
+    // {
+    //     DateTime now = rtc->now();
+    //     char timeBuffer[20];
+    //     snprintf(timeBuffer, sizeof(timeBuffer), "%02d/%02d/%02d %02d:%02d:%02d",
+    //              now.day(), now.month(), now.year() % 100, now.hour(), now.minute(), now.second());
+    //     u8g2.setCursor(4, 56);
+    //     u8g2.print(timeBuffer);
+    // }
+
+    if (rtc != NULL) {
+        DateTime now = rtc->now();
+        u8g2.setCursor(0, 56);
+        u8g2.print(now.day() < 10 ? "0" : ""); // Add leading zero if day is less than 10
+        u8g2.print(now.day());
+        u8g2.print("/");
+        u8g2.print(now.month() < 10 ? "0" : ""); // Add leading zero if month is less than 10
+        u8g2.print(now.month());
+        u8g2.print("/");
+        u8g2.print(now.year() % 100 < 10 ? "0" : ""); // Add leading zero if year % 100 is less than 10
+        u8g2.print(now.year() % 100);
+        u8g2.print(" ");
+        u8g2.print(now.hour() < 10 ? "0" : ""); // Add leading zero if hour is less than 10
+        u8g2.print(now.hour());
+        u8g2.print(":");
+        u8g2.print(now.minute() < 10 ? "0" : ""); // Add leading zero if minute is less than 10
+        u8g2.print(now.minute());
+        u8g2.print(":");
+        u8g2.print(now.second() < 10 ? "0" : ""); // Add leading zero if second is less than 10
+        u8g2.print(now.second());
+    }
+
     int progressWidth = (tickPageChange * 128) / OLED_PAGE_PAGETICK; // 128 is the width of the OLED display
     u8g2.drawBox(0, 60, progressWidth, 1);                           // 60 is the y-coordinate for the bottom of the screen, 4 is the height of the bar
 

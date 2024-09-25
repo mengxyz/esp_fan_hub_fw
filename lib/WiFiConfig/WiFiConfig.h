@@ -5,8 +5,6 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include <ESPAsyncWebServer.h>
-#include <AsyncTCP.h>
 #include <base64.h>
 #include <Adafruit_NeoPixel.h>
 #include <WS2812FX.h>
@@ -18,9 +16,14 @@
 #include <BaseModule.h>
 #include <Update.h>
 #include <Adafruit_NeoPixel.h>
+#include <PsychicHttp.h>
+#include <CustomPsychicWebSocketHandler.h>
+#include <ESPmDNS.h>
 
 
 #define ATTEMPT_CONNECT_DELAY 5000
+
+typedef void (*RtcUpdateCallback)();
 
 class WiFiConfig : public BaseModule
 {
@@ -33,20 +36,41 @@ private:
     IPAddress dns1;
     IPAddress dns2;
     uint16_t universe1 = 1; // 0 - 32767
-    WS2812FX *ws2812;
-    unsigned long lastReconnectAttempt = 0;
+    WS2812FX *argbStatus = nullptr;
+    WS2812FX *argbStrip;
+    RtcUpdateCallback rtcUpdateCallback = nullptr;
+    volatile unsigned long lastReconnectAttempt = 0;
+    volatile unsigned long lastBroadCast = 0;
     void loadIpAddress();
+    void configWifi();
+    void startServer();
 
 public:
-    AsyncWebServer server;
-    AsyncWebSocket ws;
+    PsychicHttpServer server;
+    PsychicWebSocketHandler ws;
+    PsychicUploadHandler *updateHandler = new PsychicUploadHandler();
     DataStore *dataStore;
-    WiFiConfig(DataStore *dataStore, WS2812FX *ws2812);
+    SwitchSource *swSource;
+    FanControl *fanControl;
+    WiFiConfig(DataStore *dataStore, SwitchSource *swSource, FanControl *fanControl);
     bool verifyAuth(String password);
-    void begin(WS2812FX &argb, SwitchSource &swSource, DataStore &dataStore, FanControl &fanControl);
-    static bool authHandler(AsyncWebServerRequest *request);
+    static esp_err_t handleUpdate(PsychicRequest *request, const String &filename, uint64_t index, uint8_t *data, size_t len, bool last);
+    void begin();
+    // static bool authHandler(AsyncWebServerRequest *request);
+    void broadcastSensorData();
     void service();
     int32_t rssi();
+    void useLedStatus(uint8_t pin, uint8_t count = 1, uint8_t brightness = 255) {
+        argbStatus = new WS2812FX(count, pin, NEO_GRB + NEO_KHZ800);
+    }
+
+    void useArgbStrip(WS2812FX &strip) {
+        argbStrip = &strip;
+    }
+
+    void setRtcUpdateCallback(RtcUpdateCallback callback) { // Corrected parameter type
+        rtcUpdateCallback = callback;
+    }
 };
 
 #endif // WIFI_CONFIG_H

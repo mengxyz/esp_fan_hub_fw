@@ -25,14 +25,14 @@ Thermister::Thermister()
 {
 }
 
-void Thermister::begin()
+void Thermister::begin(uint8_t addr)
 {
-    if (!this->ads.begin(ADS1115_I2C_ADDRESS, &Wire))
+    if (!this->ads.begin(addr, &Wire))
     {
-        Serial.println("Failed to initialize ADS1115");
+        Serial.println("Thermister not ready");
         return;
     }
-    Serial.println("ADS1115 initialized");
+    Serial.println("Thermister ready");
     ads.setGain(GAIN_ONE);
     ready = true;
 }

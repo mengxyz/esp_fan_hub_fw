@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_NeoPixel.h>
-#include <ArtnetWifi.h>
 #include <DataStore.h>
 #include <FanControl.h>
 #include <SwitchSource.h>
@@ -16,11 +15,15 @@
 #include <BoardTempSensor.h>
 #include <Oled.h>
 #include <ConfigData.h>
+#include <RTClib.h>
+// #include <ActionButton.h>
+#include <time.h>
 
 #define BTN_UTIL_PIN_3 17 // ARGB RND
-
+#define EXTERNAL_INTERUPT_PIN 45
 #define ARGB_PIN 8
 #define ARGB_DEBUG_PIN 3
+#define DEBUG_LED_NUM 1
 #define COLOR_ORDER GRB
 #define CHIPSET WS2811
 #define NUM_LEDS 40
@@ -32,7 +35,8 @@
 #define INA219_12V_I2C_ADDRESS 0x41
 #define INA3221_MOLEX_I2C_ADDRESS 0x43
 #define SHT30_I2C_ADDRESS 0x44
-#define ADS1115_I2C_ADDRESS 0x48
+// #define ADS1115_I2C_ADDRESS 0x48
+#define ADS1115_I2C_ADDRESS 0x49
 #define EEPROM_I2C_ADDRESS 0x50
 #define EEPROM_I2C_ADDRESS 0x50
 #define DS3231_I2C_ADDRESS 0x68

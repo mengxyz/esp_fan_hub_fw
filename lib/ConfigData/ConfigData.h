@@ -46,12 +46,17 @@ extern const char *env_dns2;
 extern const char *env_dns2;
 #endif
 
+#ifdef MDNS_NAME
+extern const char *env_mdns;
+#endif
+
 struct ArgbConfig
 {
     uint8_t mode;
     uint8_t brightness;
     uint16_t speed;
     uint8_t source;
+    uint32_t color;
 };
 
 
@@ -64,6 +69,7 @@ struct ConfigData
     char subnet[32];
     char dns1[32];
     char dns2[32];
+    char mdns[32];
 
     char auth_user[64];
     char auth_password[64];

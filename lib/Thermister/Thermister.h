@@ -12,8 +12,6 @@ const float series_resistor = 100000.0;    // Series resistor value
 const float MAX_ADC_VALUE = 32767.0;
 const float resistance_offset = -0.0;
 
-#define ADS1115_I2C_ADDRESS 0x48
-
 enum ThermisterChannel
 {
     CHANNEL_0 = 0,
@@ -31,7 +29,7 @@ private:
 public:
     Adafruit_ADS1115 ads;
     Thermister();
-    void begin();
+    void begin(uint8_t addr);
     float readTemp(ThermisterChannel channel);
     void readData(ThermisterChannel channel, int16_t &adc_value, float &voltage, float &tempC, float &resistance);
     float readResistance(ThermisterChannel channel);

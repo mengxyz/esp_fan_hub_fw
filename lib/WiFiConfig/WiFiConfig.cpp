@@ -1,5 +1,7 @@
 // lib/WiFiConfig/WifiConfig.cpp
 #include <WiFiConfig.h>
+#include <WS2812FX.h>
+#include <RTClib.h>
 
 WiFiConfig *WiFiConfig::instance = nullptr;
 
@@ -12,6 +14,269 @@ void WiFiConfig::loadIpAddress()
    dns2.fromString(this->dataStore->configData.dns2);
 }
 
+void WiFiConfig::configWifi()
+{
+   loadIpAddress();
+   Serial.printf("WIFI_SSID %s\n", dataStore->configData.ssid);
+   Serial.printf("WIFI_PASSWORD %s\n", dataStore->configData.password);
+   Serial.printf("AUTH_USER %s\n", dataStore->configData.auth_user);
+   Serial.printf("AUTH_PASSWORD %s\n", dataStore->configData.auth_password);
+   Serial.printf("MDNS %s\n", dataStore->configData.mdns);
+
+   WiFi.config(local_ip, gateway, subnet, dns1, dns2);
+   WiFi.mode(WIFI_STA);
+   WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info)
+                {
+      switch (event)
+      {
+      case SYSTEM_EVENT_STA_CONNECTED:
+         Serial.println("Connected to access point");
+         if (instance != nullptr) {
+            Serial.printf("rssi %d dB\n", WiFi.RSSI());
+            instance->isReady = true;
+            instance->startServer();
+            // set green color
+            if (instance->argbStatus != nullptr) {
+               instance->argbStatus->setPixelColor(0, 0, 0, 255);
+               instance->argbStatus->show();
+            }else {
+               Serial.println("argbStatus is null");
+            }
+         }
+         break;
+      case SYSTEM_EVENT_STA_DISCONNECTED:
+         Serial.println("Disconnected from WiFi access point");
+         // set red color
+         if (instance->argbStatus != nullptr) {
+            instance->argbStatus->setPixelColor(0, 255, 0, 0);
+            instance->argbStatus->show();
+         } else {
+            Serial.println("argbStatus is null");
+         }
+         break;
+      case SYSTEM_EVENT_AP_STADISCONNECTED:
+         Serial.println("WiFi client disconnected");
+         break;
+      default:
+         break;
+      } });
+   WiFi.setTxPower(WIFI_POWER_19_5dBm);
+   WiFi.begin(instance->dataStore->configData.ssid, instance->dataStore->configData.password);
+}
+
+void WiFiConfig::startServer()
+{
+   Serial.print("IP Address: ");
+   Serial.println(WiFi.localIP());
+
+   if (!MDNS.begin("espfanhub"))
+   {
+      Serial.println("Error starting mDNS");
+   }
+   MDNS.addService("http", "tcp", 80);
+
+   // server.config.max_uri_handlers = 20;
+   // ws.setCustomHandler(authHandler);
+   // ws.onEvent(onEvent);
+   // server.addHandler(&ws);
+
+   // DefaultHeaders::Instance().addHeader("Server", "PsychicHttp");
+   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept");
+   DefaultHeaders::Instance().addHeader("Access-Control-Max-Age", "86400");
+
+   server.listen(80);
+
+   server.on("/config", HTTP_GET, [](PsychicRequest *request)
+             {
+                  String config = instance->dataStore->getConfigDataJson();
+      return request->reply(200, "application/json", config.c_str()); });
+
+   server.on("/reset", HTTP_GET, [](PsychicRequest *request)
+             {
+                  instance->dataStore->saveDefaultConfigData();
+                  ESP.restart();
+      return request->reply(204); });
+
+   server.on("/sync-time", HTTP_GET, [](PsychicRequest *request)
+             {
+         if (instance->rtcUpdateCallback != nullptr) {
+            instance->rtcUpdateCallback();
+         }
+      return request->reply(204); });
+
+   server.on("/mode", HTTP_GET, [](PsychicRequest *request)
+             {
+      Serial.println("ON GET MODE");
+      JsonDocument doc;
+      uint8_t modeCount = instance->argbStrip->getModeCount(); 
+      for (uint8_t i = 0; i < modeCount; i++) {
+        doc["modes"][i] = instance->argbStrip->getModeName(i);
+      }
+      doc["mode"] = instance->argbStrip->getMode();
+      doc["max_speed"] = SPEED_MAX;
+      doc["min_speed"] = SPEED_MIN;
+      doc["speed"] = instance->argbStrip->getSpeed();
+      doc["brightness"] = instance->argbStrip->getBrightness();
+      doc["color"] = instance->argbStrip->getColor();
+      String out;
+      serializeJson(doc, out);
+      return request->reply(200, "application/json", out.c_str()); });
+
+   server.on(
+       "/mode", HTTP_POST, [](PsychicRequest *request)
+       {
+          Serial.println("ON SET MODE");
+          JsonDocument doc;
+          deserializeJson(doc, request->body());
+          // check exist mode
+          if (doc.containsKey("speed"))
+          {
+             instance->argbStrip->setSpeed(doc["speed"]);
+             instance->dataStore->configData.argb.speed = doc["speed"];
+          }
+          if (doc.containsKey("color"))
+          {
+             String color = doc["color"];
+             if (color.length() == 6)
+             {
+                uint32_t colorCode = strtoul(color.c_str(), NULL, 16);
+                instance->argbStrip->setColor(colorCode);
+                instance->dataStore->configData.argb.color = colorCode;
+             }
+          }
+          if (doc.containsKey("brightness"))
+          {
+             if (doc["brightness"] <= 255 && doc["brightness"] >= 0)
+             {
+                instance->argbStrip->setBrightness(doc["brightness"]);
+                instance->dataStore->configData.argb.brightness = doc["brightness"];
+             }
+          }
+          if (doc.containsKey("mode"))
+          {
+             instance->argbStrip->setMode(doc["mode"]);
+             instance->dataStore->configData.argb.mode = doc["mode"];
+          }
+          instance->dataStore->saveConfigData();
+          return request->reply(204); });
+
+   server.on(
+       "/fan-source", HTTP_POST, [](PsychicRequest *request)
+       {
+          Serial.println("ON SET SOURCE");
+          JsonDocument doc;
+          deserializeJson(doc, request->body());
+
+          // check exist mode
+          if (doc.containsKey("ch") && doc.containsKey("source") && doc["source"] <= 5 && doc["source"] >= 0)
+          {
+             int ch = doc["ch"];
+             if (ch == -1)
+             {
+                for (int i = 0; i < 5; i++)
+                {
+                   instance->swSource->setSource(FAN_INPUT_SOURCES[i], doc["source"]);
+                   instance->dataStore->configData.fanSource[i] = doc["source"];
+                }
+                Serial.println("SET ALL SOURCE");
+             }
+             else
+             {
+                instance->swSource->setSource(FAN_INPUT_SOURCES[ch], doc["source"]);
+                instance->dataStore->configData.fanSource[ch] = doc["source"];
+             }
+             instance->dataStore->saveConfigData();
+          }
+          else
+          {
+             Serial.println("Invalid source");
+          }
+          return request->reply(204); });
+
+   server.on(
+       "/argb-source", HTTP_POST, [](PsychicRequest *request)
+       {
+          Serial.println("ON SET SOURCE");
+          JsonDocument doc;
+          deserializeJson(doc, request->body());
+
+          // check exist mode
+          if (doc["source"] <= 5 && doc["source"] >= 0)
+          {
+             instance->swSource->setSource(InputSource::ARGB_SW, doc["source"]);
+             instance->dataStore->configData.argb.source = doc["source"];
+             instance->dataStore->saveConfigData();
+          }
+          else
+          {
+             Serial.println("Invalid Argb source");
+          }
+         return request->reply(204); });
+
+   server.on(
+       "/fan-duty", HTTP_POST, [](PsychicRequest *request)
+       {
+          Serial.println("ON SET SOURCE");
+          JsonDocument doc;
+          deserializeJson(doc, request->body());
+
+          // check exist mode
+          if (doc.containsKey("ch") && doc.containsKey("duty") && doc["duty"] <= 255 && doc["duty"] >= 0)
+          {
+             int ch = doc["ch"];
+             if (ch == -1)
+             {
+                instance->fanControl->setAllDuty(doc["duty"]);
+                for (int i = 0; i < 5; i++)
+                {
+                   instance->dataStore->configData.fanDuty[i] = doc["duty"];
+                }
+                Serial.println("SET ALL DUTY");
+             }
+             else
+             {
+                instance->fanControl->setDuty(ch, doc["duty"]);
+                instance->dataStore->configData.fanDuty[ch] = doc["duty"];
+             }
+             instance->dataStore->saveConfigData();
+          }
+          else
+          {
+             Serial.println("Invalid duty");
+          }
+          return request->reply(204); });
+
+   updateHandler->onUpload(handleUpdate);
+   server.on("/update", HTTP_POST, updateHandler);
+
+   server.on("/status", HTTP_GET, [](PsychicRequest *request)
+             {
+      PsychicJsonResponse response = PsychicJsonResponse(request);
+
+      JsonObject root = response.getRoot();
+      root["message"] = "Pong";
+      root["millis"] = millis();
+      return response.send(); });
+
+   ws.onOpen([](PsychicWebSocketClient *client)
+             {
+      Serial.printf("[socket] connection #%u connected from %s\n", client->socket(), client->remoteIP().toString());
+      client->sendMessage("Hello!"); });
+   ws.onFrame([](PsychicWebSocketRequest *request, httpd_ws_frame *frame)
+              {
+      Serial.printf("[socket] #%d sent: %s\n", request->client()->socket(), (char *)frame->payload);
+      return request->reply(frame); });
+   ws.onClose([](PsychicWebSocketClient *client)
+              { Serial.printf("[socket] connection #%u closed from %s\n", client->socket(), client->remoteIP().toString()); });
+
+   server.on("/ws", &ws);
+
+   server.on("*", HTTP_OPTIONS, [](PsychicRequest *request)
+             { return request->reply(204); });
+}
+
 bool WiFiConfig::verifyAuth(String password)
 {
    String encodedPassword =
@@ -20,15 +285,26 @@ bool WiFiConfig::verifyAuth(String password)
    return password == encodedPassword;
 }
 
-bool WiFiConfig::authHandler(AsyncWebServerRequest *request)
+// bool WiFiConfig::authHandler(AsyncWebServerRequest *request)
+// {
+//    AsyncWebParameter *token = request->getParam("token");
+//    Serial.printf("User Try To Connect Using Token %s \n", token->value());
+//    if (instance != nullptr)
+//    {
+//       return instance->verifyAuth(token->value());
+//    }
+//    return false;
+// }
+
+void WiFiConfig::broadcastSensorData()
 {
-   AsyncWebParameter *token = request->getParam("token");
-   Serial.printf("User Try To Connect Using Token %s \n", token->value());
-   if (instance != nullptr)
+   unsigned long currentMillis = millis();
+   if (ws.count() >= 1 && ready() && currentMillis - lastBroadCast > 1000)
    {
-      return instance->verifyAuth(token->value());
+      String out = dataStore->getSensorDataJson();
+      ws.sendAll(out.c_str());
+      lastBroadCast = currentMillis;
    }
-   return false;
 }
 
 void WiFiConfig::service()
@@ -44,53 +320,55 @@ void WiFiConfig::service()
    }
    else
    {
-      ws.cleanupClients(4);
+      // ws.cleanupClients(4);
+      // TODO
    }
 }
 
-void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
-             AwsEventType type, void *arg, uint8_t *data, size_t len)
-{
-   switch (type)
-   {
-   case WS_EVT_CONNECT:
-      Serial.printf("WebSocket client #%u connected from %s\n", client->id(),
-                    client->remoteIP().toString().c_str());
-      break;
-   case WS_EVT_DISCONNECT:
-      Serial.printf("WebSocket client #%u disconnected\n", client->id());
-      break;
-   case WS_EVT_PONG:
-      Serial.printf("WebSocket Pong #%u \n", client->id());
-      break;
-   case WS_EVT_ERROR:
-      Serial.printf("WebSocket Error #%u \n", client->id());
-      break;
-   }
-}
+// void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
+//              AwsEventType type, void *arg, uint8_t *data, size_t len)
+// {
+//    switch (type)
+//    {
+//    case WS_EVT_CONNECT:
+//       Serial.printf("WebSocket client #%u connected from %s\n", client->id(),
+//                     client->remoteIP().toString().c_str());
+//       break;
+//    case WS_EVT_DISCONNECT:
+//       Serial.printf("WebSocket client #%u disconnected\n", client->id());
+//       break;
+//    case WS_EVT_PONG:
+//       Serial.printf("WebSocket Pong #%u \n", client->id());
+//       break;
+//    case WS_EVT_ERROR:
+//       Serial.printf("WebSocket Error #%u \n", client->id());
+//       break;
+//    }
+// }
 
-WiFiConfig::WiFiConfig(DataStore *dataStore, WS2812FX *ws2812) : server(80), ws("/ws")
+WiFiConfig::WiFiConfig(DataStore *dataStore, SwitchSource *swSource, FanControl *fanControl)
 {
    this->dataStore = dataStore;
-   this->ws2812 = ws2812;
+   this->swSource = swSource;
+   this->fanControl = fanControl;
    instance = this;
 }
 
-void authCheck(AsyncWebServerRequest *request, DataStore *dataStore, std::function<void()> handler)
-{
-   if (request->authenticate(dataStore->configData.auth_user, dataStore->configData.auth_password))
-   {
-      handler();
-   }
-   else
-   {
-      request->send(403, "text/json", "{\"message\":\"Authentication Failed\"}");
-   }
-}
+// void authCheck(AsyncWebServerRequest *request, DataStore *dataStore, std::function<void()> handler)
+// {
+//    if (request->authenticate(dataStore->configData.auth_user, dataStore->configData.auth_password))
+//    {
+//       handler();
+//    }
+//    else
+//    {
+//       request->send(403, "text/json", "{\"message\":\"Authentication Failed\"}");
+//    }
+// }
 
-void handleDoUpdate(AsyncWebServerRequest *request, DataStore *dataStore, const String &filename, size_t index, uint8_t *data, size_t len, bool final)
+esp_err_t WiFiConfig::handleUpdate(PsychicRequest *request, const String &filename, uint64_t index, uint8_t *data, size_t len, bool last)
 {
-   bool authenticated = request->authenticate(dataStore->configData.auth_user, dataStore->configData.auth_password);
+   bool authenticated = request->authenticate(instance->dataStore->configData.auth_user, instance->dataStore->configData.auth_password);
 
    if (!index && authenticated)
    {
@@ -99,6 +377,7 @@ void handleDoUpdate(AsyncWebServerRequest *request, DataStore *dataStore, const 
       if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH))
       {
          Update.printError(Serial);
+         return ESP_FAIL;
       }
    }
 
@@ -107,16 +386,25 @@ void handleDoUpdate(AsyncWebServerRequest *request, DataStore *dataStore, const 
       if (Update.write(data, len) != len)
       {
          Update.printError(Serial);
+         return ESP_FAIL;
       }
+
+      // Calculate and print progress
+      size_t content_len = request->contentLength();
+      float progress = (float)(index + len) / content_len * 100;
+      Serial.printf("Progress: %.2f%%\n", progress);
    }
 
-   if (final && authenticated)
+   if (last && authenticated)
    {
-      AsyncWebServerResponse *response = request->beginResponse(302, "text/json", "{\"message\":\"Please wait device restart..\"}");
-      request->send(response);
+      PsychicJsonResponse response = PsychicJsonResponse(request);
+      JsonObject root = response.getRoot();
+      root["message"] = "Please wait device restart..";
+      response.send();
       if (!Update.end(true))
       {
          Update.printError(Serial);
+         return ESP_FAIL;
       }
       else
       {
@@ -127,9 +415,13 @@ void handleDoUpdate(AsyncWebServerRequest *request, DataStore *dataStore, const 
    }
    else if (!authenticated)
    {
-      AsyncWebServerResponse *response = request->beginResponse(403, "text/json", "{\"message\":\"Authentication Failed\"}");
-      request->send(response);
+      PsychicJsonResponse response = PsychicJsonResponse(request);
+      JsonObject root = response.getRoot();
+      root["message"] = "Authentication Failed";
+      response.send();
+      return ESP_FAIL;
    }
+   return ESP_OK;
 }
 
 void printProgress(size_t prg, size_t sz)
@@ -142,228 +434,7 @@ int32_t WiFiConfig::rssi()
    return WiFi.RSSI();
 }
 
-void WiFiConfig::begin(WS2812FX &argb, SwitchSource &swSource, DataStore &dataStore, FanControl &fanControl)
+void WiFiConfig::begin()
 {
-   loadIpAddress();
-   Serial.printf("WIFI_SSID %s\n", dataStore.configData.ssid);
-   Serial.printf("WIFI_PASSWORD %s\n", dataStore.configData.password);
-   Serial.printf("AUTH_USER %s\n", dataStore.configData.auth_user);
-   Serial.printf("AUTH_PASSWORD %s\n", dataStore.configData.auth_password);
-
-   WiFi.config(local_ip, gateway, subnet, dns1, dns2);
-   WiFi.mode(WIFI_STA);
-   WiFi.onEvent([&argb](WiFiEvent_t event, WiFiEventInfo_t info)
-                {
-      switch (event)
-      {
-      case SYSTEM_EVENT_STA_CONNECTED:
-         Serial.println("Connected to access point");
-         if (instance != nullptr) {
-            Serial.printf("rssi %d dB\n", WiFi.RSSI());
-            instance->isReady = true;
-         }
-         break;
-      case SYSTEM_EVENT_STA_DISCONNECTED:
-         Serial.println("Disconnected from WiFi access point");
-         break;
-      case SYSTEM_EVENT_AP_STADISCONNECTED:
-         Serial.println("WiFi client disconnected");
-         break;
-      default:
-         break;
-      } });
-   WiFi.setTxPower(WIFI_POWER_19_5dBm);
-   WiFi.begin(dataStore.configData.ssid, dataStore.configData.password);
-
-   Serial.print("IP Address: ");
-   Serial.println(WiFi.localIP());
-   ws.setCustomHandler(authHandler);
-   ws.onEvent(onEvent);
-   server.addHandler(&ws);
-
-   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
-   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods",
-                                        "GET, POST, PUT");
-   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers",
-                                        "Content-Type");
-
-   server.on("/auth", HTTP_GET, [](AsyncWebServerRequest *request)
-             {
-      if (!request->authenticate("user", "pass")) {
-         return request->requestAuthentication();
-      }
-      request->send(200, "application/json",
-                    "{\"message\":\"Login Successfully\"}"); });
-
-   server.onNotFound([](AsyncWebServerRequest *request)
-                     {
-    if (request->method() == HTTP_OPTIONS) {
-      request->send(204);
-    } else {
-      request->send(404);
-    } });
-
-   server.on("/mode", HTTP_GET, [&argb](AsyncWebServerRequest *request)
-             {
-      Serial.println("ON GET MODE");
-      JsonDocument doc;
-      doc["mode"] = argb.getMode();
-      doc["max_speed"] = SPEED_MAX;
-      doc["min_speed"] = SPEED_MIN;
-      doc["speed"] = argb.getSpeed();
-      doc["brightness"] = argb.getBrightness();
-      doc["color"] = argb.getColor();
-      String out;
-      serializeJson(doc, out);
-      request->send(200, "application/json", out); });
-
-   server.on(
-       "/mode", HTTP_POST, [](AsyncWebServerRequest *request) {},
-       NULL, // We will not use the body handler here
-       [&argb, &dataStore](AsyncWebServerRequest *request, uint8_t *data, size_t len,
-                           size_t index, size_t total)
-       {
-          Serial.println("ON SET MODE");
-          JsonDocument doc;
-          deserializeJson(doc, data);
-          // check exist mode
-          if (doc.containsKey("speed"))
-          {
-             argb.setSpeed(doc["speed"]);
-             dataStore.configData.argb.speed = doc["speed"];
-          }
-          if (doc.containsKey("color"))
-          {
-             String color = doc["color"];
-             if (color.length() == 6)
-             {
-                uint32_t colorCode = strtoul(color.c_str(), NULL, 16);
-                argb.setColor(colorCode);
-             }
-          }
-          if (doc.containsKey("brightness"))
-          {
-             if (doc["brightness"] <= 255 && doc["brightness"] >= 0)
-             {
-                argb.setBrightness(doc["brightness"]);
-                dataStore.configData.argb.brightness = doc["brightness"];
-             }
-          }
-          if (doc.containsKey("mode"))
-          {
-             argb.setMode(doc["mode"]);
-             dataStore.configData.argb.mode = doc["mode"];
-          }
-          dataStore.saveConfigData();
-          request->send(204);
-       });
-
-   server.on(
-       "/fan-source", HTTP_POST, [](AsyncWebServerRequest *request) {},
-       NULL, // We will not use the body handler here
-       [&swSource, &dataStore](AsyncWebServerRequest *request, uint8_t *data, size_t len,
-                               size_t index, size_t total)
-       {
-          Serial.println("ON SET SOURCE");
-          JsonDocument doc;
-          deserializeJson(doc, data);
-
-          // check exist mode
-          if (doc.containsKey("ch") && doc.containsKey("source") && doc["source"] <= 5 && doc["source"] >= 0)
-          {
-             int ch = doc["ch"];
-             if (ch == -1)
-             {
-                for (int i = 0; i < 5; i++)
-                {
-                   swSource.setSource(FAN_INPUT_SOURCES[i], doc["source"]);
-                   dataStore.configData.fanSource[i] = doc["source"];
-                }
-                Serial.println("SET ALL SOURCE");
-             }
-             else
-             {
-                swSource.setSource(FAN_INPUT_SOURCES[ch], doc["source"]);
-                dataStore.configData.fanSource[ch] = doc["source"];
-             }
-             dataStore.saveConfigData();
-          }
-          else
-          {
-             Serial.println("Invalid source");
-          }
-          request->send(204);
-       });
-
-   server.on(
-       "/argb-source", HTTP_POST, [](AsyncWebServerRequest *request) {},
-       NULL, // We will not use the body handler here
-       [&swSource, &dataStore](AsyncWebServerRequest *request, uint8_t *data, size_t len,
-                               size_t index, size_t total)
-       {
-          Serial.println("ON SET SOURCE");
-          JsonDocument doc;
-          deserializeJson(doc, data);
-
-          // check exist mode
-          if (doc["source"] <= 5 && doc["source"] >= 0)
-          {
-             swSource.setSource(InputSource::ARGB_SW, doc["source"]);
-             dataStore.configData.argb.source = doc["source"];
-             dataStore.saveConfigData();
-          }
-          else
-          {
-             Serial.println("Invalid Argb source");
-          }
-          request->send(204);
-       });
-
-   server.on(
-       "/fan-duty", HTTP_POST, [](AsyncWebServerRequest *request) {},
-       NULL, // We will not use the body handler here
-       [&fanControl, &dataStore](AsyncWebServerRequest *request, uint8_t *data, size_t len,
-                                 size_t index, size_t total)
-       {
-          Serial.println("ON SET SOURCE");
-          JsonDocument doc;
-          deserializeJson(doc, data);
-
-          // check exist mode
-          if (doc.containsKey("ch") && doc.containsKey("duty") && doc["duty"] <= 255 && doc["duty"] >= 0)
-          {
-             int ch = doc["ch"];
-             if (ch == -1)
-             {
-                fanControl.setAllDuty(doc["duty"]);
-                for (int i = 0; i < 5; i++)
-                {
-                   dataStore.configData.fanDuty[i] = doc["duty"];
-                }
-                Serial.println("SET ALL DUTY");
-             }
-             else
-             {
-                fanControl.setDuty(ch, doc["duty"]);
-                dataStore.configData.fanDuty[ch] = doc["duty"];
-             }
-             dataStore.saveConfigData();
-          }
-          else
-          {
-             Serial.println("Invalid duty");
-          }
-          request->send(204);
-       });
-
-   server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request) {}, [&dataStore](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final)
-             { handleDoUpdate(request, &dataStore, filename, index, data, len, final); });
-
-   server.on("/status", HTTP_GET, [&dataStore](AsyncWebServerRequest *request)
-             { authCheck(request, &dataStore, [&]()
-                         { request->send(200, "text/json", "{\"message\":\"OK\"}"); }); });
-   server.on("/status", HTTP_POST, [](AsyncWebServerRequest *request) {}, [](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final)
-             { request->send(200, "text/json", "{\"message\":\"OK\"}"); });
-   server.begin();
-   Update.onProgress(printProgress);
+   configWifi();
 }
