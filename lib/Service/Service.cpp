@@ -50,7 +50,16 @@ void mainLoopTask(void *parameter)
 {
   while (true)
   {
-    oled.service(dataStore.sensorData);
+    oled.service(dataStore);
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+  }
+}
+
+void argbTask(void *parameter)
+{
+  while (true)
+  {
+    ws2812fx.service();
     vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 }
@@ -107,7 +116,8 @@ void setupService()
   wifiConfig.useArgbStrip(ws2812fx);
   wifiConfig.begin();
   wifiConfig.setRtcUpdateCallback(syncTime);
-  // oled.setRtc(&rtc);
+  oled.setRtc(&rtc);
+  oled.setStrip(&ws2812fx);
   oled.begin();
 
   if (!rtc.begin())
@@ -149,24 +159,24 @@ void setupService()
 
   // Create the main loop task and pin it to core 1
   xTaskCreatePinnedToCore(
-      mainLoopTask,   // Task function
-      "mainLoopTask", // Name of the task
+      argbTask,   // Task function
+      "argbTask", // Name of the task
       10000,          // Stack size (in bytes)
       NULL,           // Task input parameter
       1,              // Priority of the task
       NULL,           // Task handle
-      0               // Core number (0 or 1)
+      1               // Core number (0 or 1)
   );
 
-  // xTaskCreatePinnedToCore(
-  //     fanTasks,   // Task function
-  //     "fanTasks", // Name of the task
-  //     10000,      // Stack size (in bytes)
-  //     NULL,       // Task input parameter
-  //     2,          // Priority of the task
-  //     NULL,       // Task handle
-  //     0           // Core number (0 or 1)
-  // );              // Enable the alarm                // Enable the alarm
+  xTaskCreatePinnedToCore(
+      mainLoopTask,   // Task function
+      "mainLoopTask", // Name of the task
+      10000,          // Stack size (in bytes)
+      NULL,           // Task input parameter
+      2,              // Priority of the task
+      NULL,           // Task handle
+      1               // Core number (0 or 1)
+  );
 }
 unsigned long lastMillis = 0;
 unsigned long lastIntervalMillis = 0;
@@ -175,7 +185,7 @@ void loopService()
   unsigned long currentMillis = millis();
   wifiConfig.service();
   dataStore.service();
-  ws2812fx.service();
+  // ws2812fx.service();
   wifiConfig.broadcastSensorData();
 
   if (lastIntervalMillis - currentMillis > 1000)

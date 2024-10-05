@@ -40,6 +40,10 @@ public:
     ConfigData configData;
     String getSensorDataJson();
     String getConfigDataJson();
+    JsonDocument getConfigDataDoc() {
+        serializedConfigDataDoc();
+        return configDataDoc;
+    }
     void serializedSensorDataBuffer(char *buf);
     void begin();
     void printSensorData();

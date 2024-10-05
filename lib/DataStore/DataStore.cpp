@@ -117,16 +117,8 @@ void DataStore::serializedConfigDataDoc()
     configDataDoc["mdns"] = configData.mdns;
     for (int i = 0; i < 5; i++)
     {
-        if (configData.fanSource[i] == 0)
-        {
-            configDataDoc["fan_source"][i] = 0;
-            configDataDoc["fan_duty"][i] = 0;
-        }
-        else
-        {
-            configDataDoc["fan_source"][i] = configData.fanSource[i];
-            configDataDoc["fan_duty"][i] = configData.fanDuty[i];
-        }
+        configDataDoc["fan_source"][i] = configData.fanSource[i];
+        configDataDoc["fan_duty"][i] = configData.fanDuty[i];
     }
     configDataDoc["argb"]["mode"] = configData.argb.mode;
     configDataDoc["argb"]["speed"] = configData.argb.speed;

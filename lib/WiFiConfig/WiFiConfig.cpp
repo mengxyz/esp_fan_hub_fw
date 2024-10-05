@@ -90,12 +90,23 @@ void WiFiConfig::startServer()
 
    server.on("/config", HTTP_GET, [](PsychicRequest *request)
              {
-                  String config = instance->dataStore->getConfigDataJson();
-      return request->reply(200, "application/json", config.c_str()); });
+      JsonDocument doc = instance->dataStore->getConfigDataDoc();
+      uint8_t modeCount = instance->argbStrip->getModeCount(); 
+      for (uint8_t i = 0; i < modeCount; i++) {
+        doc["argb"]["modes"][i] = instance->argbStrip->getModeName(i);
+      }
+      String output;
+      serializeJson(doc, output);
+      return request->reply(200, "application/json", output.c_str()); });
 
    server.on("/reset", HTTP_GET, [](PsychicRequest *request)
              {
                   instance->dataStore->saveDefaultConfigData();
+                  ESP.restart();
+      return request->reply(204); });
+
+   server.on("/restart", HTTP_GET, [](PsychicRequest *request)
+             {
                   ESP.restart();
       return request->reply(204); });
 

@@ -39,10 +39,14 @@ void IRAM_ATTR FanControl::TAC_4_ISR()
 
 void IRAM_ATTR FanControl::TAC_5_ISR()
 {
-  if (instance)
+  if (!instance)
+    return;
+  unsigned long currentTime = millis();
+  if (currentTime - instance->last_pulse_times[4] >= FAN_FILTER_TIME)
   {
     instance->pwm_freqs[4]++;
   }
+  instance->last_pulse_times[4] = currentTime;
 }
 
 void IRAM_ATTR FanControl::pulseInterrupt(void *arg)
@@ -51,7 +55,7 @@ void IRAM_ATTR FanControl::pulseInterrupt(void *arg)
     return;
   int fanIndex = (int)arg;
   unsigned long currentTime = millis();
-  if (currentTime - instance->last_pulse_times[fanIndex] >= 100)
+  if (currentTime - instance->last_pulse_times[fanIndex] >= 10)
   {
     instance->pwm_freqs[fanIndex]++;
   }
@@ -141,17 +145,18 @@ FanControl::FanControl(int pwm_freq, int pwm_res)
 }
 void FanControl::service()
 {
-  if (millis() - lastCalcTime >= 1000)
+  if (!(millis() - lastCalcTime >= 1000))
   {
-    for (int i = 0; i < 5; i++)
-    {
-      noInterrupts();
-      pwm_freq_buffers[i] = pwm_freqs[i];
-      pwm_freqs[i] = 0;
-      interrupts();
-    }
-    lastCalcTime = millis();
+    return;
   }
+  for (int i = 0; i < 5; i++)
+  {
+    noInterrupts();
+    pwm_freq_buffers[i] = pwm_freqs[i];
+    pwm_freqs[i] = 0;
+    interrupts();
+  }
+  lastCalcTime = millis();
 }
 
 void FanControl::finalize()
@@ -167,6 +172,11 @@ void FanControl::finalize()
 
 void FanControl::finalizePcnt()
 {
+  noInterrupts();
+  pwm_freq_buffers[4] = pwm_freqs[4];
+  pwm_freqs[4] = 0;
+  interrupts();
+  
   for (int i = 0; i < 4; i++)
   {
     pcnt_counter_pause(PCNT_UNITS[i]);
@@ -180,9 +190,7 @@ void FanControl::finalizePcnt()
   {
     pcnt_counter_resume(PCNT_UNITS[i]);
   }
-  
-  pwm_freq_buffers[4] = pwm_freqs[4];
-  pwm_freqs[4] = 0;
+
 }
 
 void FanControl::begin()
@@ -193,8 +201,8 @@ void FanControl::begin()
   {
     initPcnt(TAC_PINS[i], PCNT_UNITS[i]);
   }
-  pinMode(TAC_PINS[4], INPUT_PULLUP);
-  attachInterruptArg(digitalPinToInterrupt(TAC_PINS[4]), pulseInterrupt, (void *)4, FALLING);
+  pinMode(PIN_TAC_5, INPUT_PULLUP);
+  attachInterrupt(PIN_TAC_5, TAC_5_ISR, FALLING);
 }
 
 void FanControl::beginBtnUtils()

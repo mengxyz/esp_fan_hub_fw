@@ -12,13 +12,14 @@
 #define PIN_TAC_5 42
 
 const unsigned long FAN_DEBOUNCE_TIME = 1000;
+const unsigned long FAN_FILTER_TIME = 10;
 const int TAC_PINS[5] = {PIN_TAC_1, PIN_TAC_2, PIN_TAC_3, PIN_TAC_4, PIN_TAC_5};
 
 #define PIN_PWM_1 6
 #define PIN_PWM_2 5
 #define PIN_PWM_3 4
 
-#ifdef OLD_VERSION
+#ifdef FANHUB_OLD_VERSION
 #define PIN_PWM_4 20
 #else
 #define PIN_PWM_4 11
