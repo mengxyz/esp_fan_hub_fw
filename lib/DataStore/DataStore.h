@@ -4,6 +4,7 @@
 #include <ArduinoJson.h>
 #include <Thermister.h>
 #include <VoltageSensor.h>
+#include <MolexPowerMeter.h>
 #include <FanControl.h>
 #include <ConfigData.h>
 
@@ -49,6 +50,7 @@ public:
     void printSensorData();
     void setThermisterData(Thermister &thermister);
     void setVoltageSensorData(VoltageSensor &voltageSensor);
+    void setMolexPowerData(MolexPowerMeter &molexPowerMeter);
     void saveConfigData();
     void saveDefaultConfigData();
     void service();

@@ -49,6 +49,7 @@ private:
     void displayOtherSensors(SensorData &sensorData);
     void displayPowerConsumption(SensorData &sensorData);
     void displayLightInfo(DataStore &dataStore);
+    void displaySystemUsage();
 };
 
 

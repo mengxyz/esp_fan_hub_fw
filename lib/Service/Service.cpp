@@ -8,7 +8,7 @@ WS2812FX ws2812fx = WS2812FX(NUM_LEDS, ARGB_PIN, NEO_GRB + NEO_KHZ800);
 
 /// Define Sensors
 VoltageSensor voltageSensor(INA219_5V_I2C_ADDRESS, INA219_12V_I2C_ADDRESS);
-MolexPowerMeter molexPowerMeter(INA3221_MOLEX_I2C_ADDRESS);
+MolexPowerMeter molexPowerMeter;
 BoardTempSensor boardTempSensor(SHTSensor::SHT3X);
 Oled oled;
 Thermister thermister;
@@ -17,6 +17,7 @@ DataStore dataStore(EEPROM_I2C_ADDRESS, I2C_DEVICESIZE_24LC256);
 FanControl fanControl;
 WiFiConfig wifiConfig(&dataStore, &swSource, &fanControl);
 RTC_DS3231 rtc;
+SerialTool serialTool(Serial);
 // ActionButton actionBtn(EEPROM_RESET_PIN, 2, 20);
 
 void IRAM_ATTR BTN_UTIL_3_ISR()
@@ -79,17 +80,17 @@ const long gmtOffset_sec = 7 * 3600;
 const int daylightOffset_sec = 0;
 void syncTime()
 {
-  Serial.println("Sync time");
+  DEBUG_PRINTLN("Sync time");
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   syncTimeFlag = true;
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo))
   {
-    Serial.println("Failed to obtain time");
+    DEBUG_PRINTLN("Failed to obtain time");
     return;
   }
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+  DEBUG_PRINTLN(&timeinfo, "%A, %B %d %Y %H:%M:%S");
 
   if (timeinfo.tm_year > 100)
   {
@@ -110,6 +111,7 @@ void setupService()
   fanControl.initAllDuty(dataStore.configData.fanDuty);
   initBtnUtility();
   voltageSensor.begin();
+  molexPowerMeter.begin();
   thermister.begin(ADS1115_I2C_ADDRESS);
   boardTempSensor.begin();
   wifiConfig.useLedStatus(ARGB_DEBUG_PIN, DEBUG_LED_NUM, ARGB_BRIGHTNESS);
@@ -122,15 +124,15 @@ void setupService()
 
   if (!rtc.begin())
   {
-    Serial.println("Couldn't find RTC");
+    DEBUG_PRINTLN("Couldn't find RTC");
   }
   else
   {
-    Serial.println("Found RTC");
+    DEBUG_PRINTLN("Found RTC");
 
     if (rtc.lostPower())
     {
-      Serial.println("RTC lost power, let's set the time!");
+      DEBUG_PRINTLN("RTC lost power, let's set the time!");
       rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     }
     rtc.disable32K();
@@ -141,11 +143,11 @@ void setupService()
 
   if (!psramInit())
   {
-    Serial.println("PSRAM initialization failed!");
+    DEBUG_PRINTLN("PSRAM initialization failed!");
   }
   else
   {
-    Serial.println("PSRAM initialized successfully");
+    DEBUG_PRINTLN("PSRAM initialized successfully");
   }
 
   // actionBtn.addStep(1, (void (*) {
@@ -161,11 +163,11 @@ void setupService()
   xTaskCreatePinnedToCore(
       argbTask,   // Task function
       "argbTask", // Name of the task
-      10000,          // Stack size (in bytes)
-      NULL,           // Task input parameter
-      1,              // Priority of the task
-      NULL,           // Task handle
-      1               // Core number (0 or 1)
+      10000,      // Stack size (in bytes)
+      NULL,       // Task input parameter
+      1,          // Priority of the task
+      NULL,       // Task handle
+      1           // Core number (0 or 1)
   );
 
   xTaskCreatePinnedToCore(
@@ -194,6 +196,7 @@ void loopService()
     dataStore.setThermisterData(thermister);
     swSource.readState(dataStore.configData.fanSource, dataStore.configData.argb.source);
     dataStore.setVoltageSensorData(voltageSensor);
+    dataStore.setMolexPowerData(molexPowerMeter);
     fanControl.readFanData(&dataStore.sensorData.fanData);
     lastIntervalMillis = currentMillis;
   }
@@ -210,9 +213,22 @@ void loopService()
     if (now.year() > 100)
     {
       syncTimeFlag = true;
-      Serial.printf("%d-%02d-%02d %02d:%02d:%02d\n", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
-      Serial.println("Skip time sync");
+      DEBUG_PRINTF("%d-%02d-%02d %02d:%02d:%02d\n", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
+      DEBUG_PRINTLN("Skip time sync");
       return;
+    }
+  }
+  String cmd = serialTool.hasCommand();
+  if (cmd != S_CMD_RESET)
+  {
+    if (cmd == S_CMD_RESTART)
+    {
+      ESP.restart();
+    }
+    if (cmd == S_CMD_RESET)
+    {
+      dataStore.saveDefaultConfigData();
+      ESP.restart();
     }
   }
 }

@@ -29,10 +29,10 @@ void Thermister::begin(uint8_t addr)
 {
     if (!this->ads.begin(addr, &Wire))
     {
-        Serial.println("Thermister not ready");
+        DEBUG_PRINTLN("Thermister not ready");
         return;
     }
-    Serial.println("Thermister ready");
+    DEBUG_PRINTLN("Thermister ready");
     ads.setGain(GAIN_ONE);
     ready = true;
 }
@@ -41,7 +41,7 @@ float Thermister::readTemp(ThermisterChannel channel)
 {
     if (!ready)
     {
-        Serial.println("Thermister not ready");
+        DEBUG_PRINTLN("Thermister not ready");
         return 0.0;
     }
     float resistance = readResistance(channel);
@@ -52,7 +52,7 @@ void Thermister::readData(ThermisterChannel channel, int16_t &adc_value, float &
 {
     if (!ready)
     {
-        Serial.println("Thermister not ready");
+        DEBUG_PRINTLN("Thermister not ready");
         return;
     }
 
@@ -84,22 +84,22 @@ float Thermister::readResistance(ThermisterChannel channel)
 {
     if (!ready)
     {
-        Serial.println("Thermister not ready");
+        DEBUG_PRINTLN("Thermister not ready");
         return 0.0;
     }
 
     int16_t adc_value = ads.readADC_SingleEnded(channel);
     if (adc_value == 0)
     {
-        Serial.println("ADC value is zero");
+        DEBUG_PRINTLN("ADC value is zero");
         return 0.0;
     }
 
     // Ensure ADC value is within the expected range
     if (adc_value > MAX_ADC_VALUE)
     {
-        Serial.print("ADC value out of range: ");
-        Serial.println(adc_value);
+        DEBUG_PRINT("ADC value out of range: ");
+        DEBUG_PRINTLN(adc_value);
         return 0.0;
     }
 

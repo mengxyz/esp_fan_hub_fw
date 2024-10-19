@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <SensorData.h>
 #include <driver/pcnt.h>
+#include <Debuger.h>
 
 #if !defined(FAN_CONTROL_H)
 #define FAN_CONTROL_H

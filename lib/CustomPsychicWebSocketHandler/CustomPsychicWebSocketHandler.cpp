@@ -13,7 +13,7 @@ CustomPsychicWebSocketHandler::~CustomPsychicWebSocketHandler()
 
 esp_err_t CustomPsychicWebSocketHandler::handleRequest(PsychicRequest *request)
 {
-    Serial.println("CustomPsychicWebSocketHandler::handleRequest");
+    DEBUG_PRINTLN("CustomPsychicWebSocketHandler::handleRequest");
     PsychicClient *client = checkForNewClient(request->client());
 
     // if no token reject this client
@@ -22,16 +22,16 @@ esp_err_t CustomPsychicWebSocketHandler::handleRequest(PsychicRequest *request)
     {  
         // if (request->queryString())
         // {
-        //     Serial.println("Invalid Token");
+        //     DEBUG_PRINTLN("Invalid Token");
         //     return ESP_FAIL;
         // }
         // else
         // {
-        //     Serial.println("Valid Token");
-        //     Serial.println(request->header("Sec-WebSocket-Protocol"));
+        //     DEBUG_PRINTLN("Valid Token");
+        //     DEBUG_PRINTLN(request->header("Sec-WebSocket-Protocol"));
         // }
         // if(request->url() != "/ws?token=dXNlcjoxMjM0NTY=") {
-        //     Serial.println("Invalid Token");
+        //     DEBUG_PRINTLN("Invalid Token");
         //     return ESP_FAIL;
         // }
         if (client->isNew)

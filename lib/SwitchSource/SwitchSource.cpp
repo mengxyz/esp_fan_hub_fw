@@ -23,7 +23,7 @@ bool SwitchSource::begin()
         this->pcf.digitalWrite(PWM_SW_CH_5, LOW);
         this->pcf.digitalWrite(ARGB_SW, LOW);
         ready = true;
-        Serial.println("SwitchSource Ready");
+        DEBUG_PRINTLN("SwitchSource Ready");
         return true;
     }
     notReady();
@@ -108,5 +108,5 @@ void SwitchSource::readState(uint8_t (&fanSource)[5], uint8_t &argbSource)
 
 void SwitchSource::notReady()
 {
-    Serial.println("SwitchSource not ready");
+    DEBUG_PRINTLN("SwitchSource not ready");
 }

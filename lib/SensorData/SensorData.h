@@ -47,13 +47,20 @@ struct RamData
     uint32_t total;
 };
 
+struct MolexPowerData
+{
+    Ina219Data fiveVolt[3];
+    Ina219Data twelveVolt[3];
+};
+
+
 struct SensorData
 {
     BoardTempData boardTemp;
     ThermistorData thermistor;
     VoltageData voltage;
     FanData fanData;
-    Ina219Data molexPower[3];
+    MolexPowerData molexPower;
     RamData ram;
     RamData psram;
 };

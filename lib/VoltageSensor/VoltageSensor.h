@@ -1,5 +1,6 @@
 #include <Adafruit_INA219.h>
 #include <SensorData.h>
+#include <Debuger.h>
 
 #if !defined(VOLTAGE_SENSOR_H)
 #define VOLTAGE_SENSOR_H

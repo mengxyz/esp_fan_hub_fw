@@ -2,6 +2,11 @@
 #include <Fonts/Picopixel.h>
 #include <WiFi.h>
 #include <WS2812FX.h>
+#include "FreeRTOSConfig.h"
+#include "esp_system.h"
+#include "esp_freertos_hooks.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 const uint8_t u8g2_font_spleen5x8_mr[1010] U8G2_FONT_SECTION("u8g2_font_spleen5x8_mr") = 
   "`\2\3\2\3\4\1\1\4\5\10\0\377\6\377\7\377\1\77\2\217\3\325 \6\305\372\274\2!\10\305"
@@ -43,10 +48,10 @@ void Oled::begin()
 {
     if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_I2C_ADDRESS))
     {
-        Serial.println("SSD1306 allocation failed");
+        DEBUG_PRINTLN("SSD1306 allocation failed");
         return;
     }
-    Serial.println("OLED ready");
+    DEBUG_PRINTLN("OLED ready");
     display.clearDisplay();
     display.display();
     u8g2Writer.begin(display);
@@ -258,4 +263,63 @@ void Oled::displayLightInfo(DataStore &dataStore)
         u8g2Writer.setCursor(4, 8);
         u8g2Writer.print("Light Not Enabled");
     }
+}
+
+uint32_t get_idle_time(int cpu_id) {
+    // TaskStatus_t tasks[configMAX_TASKS];
+    // uint32_t total_run_time = 0;
+    // uint32_t idle_run_time = 0;
+
+    // // Get the run time statistics for all tasks
+    // uint32_t num_tasks = uxTaskGetSystemState(tasks, configMAX_TASKS, &total_run_time);
+
+    // // Find the idle task for the specified CPU
+    // for (uint32_t i = 0; i < num_tasks; i++) {
+    //     if (tasks[i].xCoreID == cpu_id && strncmp(tasks[i].pcTaskName, "IDLE", 4) == 0) {
+    //         idle_run_time = tasks[i].ulRunTimeCounter;
+    //         break;
+    //     }
+    // }
+
+    // return idle_run_time;
+    return 0;
+}
+
+float get_cpu_usage(int cpu_id) {
+    // static uint32_t last_idle_time[2] = {0, 0};
+    // static uint32_t last_total_time[2] = {0, 0};
+    // uint32_t idle_time = get_idle_time(cpu_id);
+    // uint32_t total_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+
+    // uint32_t idle_diff = idle_time - last_idle_time[cpu_id];
+    // uint32_t total_diff = total_time - last_total_time[cpu_id];
+
+    // last_idle_time[cpu_id] = idle_time;
+    // last_total_time[cpu_id] = total_time;
+
+    // float cpu_usage = 100.0 - ((float)idle_diff / total_diff) * 100.0;
+    // return cpu_usage;
+    return 0.0;
+}
+
+void Oled::displaySystemUsage()
+{
+    u8g2Writer.setCursor(4, 8);
+    u8g2Writer.print("System Usage");
+
+    u8g2Writer.setCursor(4, 16);
+    u8g2Writer.print("CPU 0: ");
+    u8g2Writer.print(get_cpu_usage(0));
+    u8g2Writer.print("%");
+    
+    u8g2Writer.setCursor(4, 24);
+    u8g2Writer.print("CPU 1: ");
+    u8g2Writer.print(get_cpu_usage(1));
+    u8g2Writer.print("%");
+
+    // Ram use percentage
+    u8g2Writer.setCursor(4, 32);
+    u8g2Writer.print("RAM: ");
+    u8g2Writer.print(100.0 - (float)heap_caps_get_free_size(MALLOC_CAP_8BIT) / (float)heap_caps_get_total_size(MALLOC_CAP_8BIT) * 100.0);
+    u8g2Writer.print("%");
 }

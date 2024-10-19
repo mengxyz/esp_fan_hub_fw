@@ -4,6 +4,7 @@
 #include <Adafruit_ADS1X15.h>
 #include <Arduino.h>
 #include <Wire.h>
+#include <Debuger.h>
 
 const float nominal_resistance = 103000.0; // Nominal resistance at 25 degrees C
 const float nominal_temperature = 298.15;  // 25 degrees C in Kelvin

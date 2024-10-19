@@ -3,6 +3,7 @@
 
 #include "PsychicWebSocket.h"
 #include <Arduino.h>
+#include <Debuger.h>
 
 class CustomPsychicWebSocketHandler : public PsychicWebSocketHandler
 {

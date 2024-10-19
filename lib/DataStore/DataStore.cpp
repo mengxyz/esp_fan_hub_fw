@@ -97,9 +97,13 @@ void DataStore::serializedSensorDataDoc()
 
     for (int i = 0; i < 3; i++)
     {
-        sensorDataDoc["module"]["molex"][i]["current"] = sensorData.molexPower[i].current;
-        sensorDataDoc["module"]["molex"][i]["voltage"] = sensorData.molexPower[i].voltage;
-        sensorDataDoc["module"]["molex"][i]["power"] = sensorData.molexPower[i].power;
+        sensorDataDoc["module"]["molex"]["fiveVolt"][i]["current"] = sensorData.molexPower.fiveVolt[i].current;
+        sensorDataDoc["module"]["molex"]["fiveVolt"][i]["voltage"] = sensorData.molexPower.fiveVolt[i].voltage;
+        sensorDataDoc["module"]["molex"]["fiveVolt"][i]["power"] = sensorData.molexPower.fiveVolt[i].power;
+
+        sensorDataDoc["module"]["molex"]["twelveVolt"][i]["current"] = sensorData.molexPower.twelveVolt[i].current;
+        sensorDataDoc["module"]["molex"]["twelveVolt"][i]["voltage"] = sensorData.molexPower.twelveVolt[i].voltage;
+        sensorDataDoc["module"]["molex"]["twelveVolt"][i]["power"] = sensorData.molexPower.twelveVolt[i].power;
     }
 }
 
@@ -132,10 +136,10 @@ bool DataStore::initEEPROM()
     ee.begin();
     if (!ee.isConnected())
     {
-        Serial.println("EEPROM not ready");
+        DEBUG_PRINTLN("EEPROM not ready");
         return false;
     }
-    Serial.println("EEPROM ready");
+    DEBUG_PRINTLN("EEPROM ready");
     eepromReady = true;
     return true;
 }
@@ -156,9 +160,9 @@ String DataStore::getConfigDataJson()
 void DataStore::printSensorData()
 {
     serializedSensorDataDoc();
-    Serial.println();
+    DEBUG_PRINTLN();
     serializeJsonPretty(sensorDataDoc, Serial);
-    Serial.println();
+    DEBUG_PRINTLN();
 }
 
 void DataStore::setThermisterData(Thermister &thermister)
@@ -173,14 +177,19 @@ void DataStore::setVoltageSensorData(VoltageSensor &voltageSensor)
     voltageSensor.read12V(&sensorData.voltage.twelveVolt);
 }
 
+void DataStore::setMolexPowerData(MolexPowerMeter &molexPowerMeter)
+{
+    molexPowerMeter.readPower(sensorData.molexPower);
+}
+
 void DataStore::loadConfigData()
 {
-    Serial.println("Loading config data");
+    DEBUG_PRINTLN("Loading config data");
     ee.readBlock(0, (uint8_t *)&configData, sizeof(configData));
-    Serial.println("Config data loaded");
+    DEBUG_PRINTLN("Config data loaded");
     serializedConfigDataDoc();
     serializeJsonPretty(configDataDoc, Serial);
-    Serial.println("");
+    DEBUG_PRINTLN("");
 }
 
 void DataStore::setDefaultConfigData()
@@ -229,9 +238,13 @@ void DataStore::setDefaultConfigData()
 
     for (int i = 0; i < 3; i++)
     {
-        sensorData.molexPower[i].current = 0.0;
-        sensorData.molexPower[i].voltage = 0.0;
-        sensorData.molexPower[i].power = 0.0;
+        sensorData.molexPower.fiveVolt[i].current = 0.0;
+        sensorData.molexPower.fiveVolt[i].voltage = 0.0;
+        sensorData.molexPower.fiveVolt[i].power = 0.0;
+
+        sensorData.molexPower.twelveVolt[i].current = 0.0;
+        sensorData.molexPower.twelveVolt[i].voltage = 0.0;
+        sensorData.molexPower.twelveVolt[i].power = 0.0;
     }
     sensorDataDoc["fw_version"] = FW_VERSION;
 }
@@ -240,7 +253,7 @@ void DataStore::saveConfigData()
 {
     ee.setBlock(0, 0, sizeof(configData));
     ee.writeBlock(0, (uint8_t *)&configData, sizeof(configData));
-    Serial.println("Config data saved");
+    DEBUG_PRINTLN("Config data saved");
 }
 
 void DataStore::saveDefaultConfigData()

@@ -196,7 +196,7 @@ void FanControl::finalizePcnt()
 void FanControl::begin()
 {
   initPwmGenerator();
-  Serial.println("FanControl ready");
+  DEBUG_PRINTLN("FanControl ready");
   for (int i = 0; i < 4; i++)
   {
     initPcnt(TAC_PINS[i], PCNT_UNITS[i]);

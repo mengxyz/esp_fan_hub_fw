@@ -17,11 +17,11 @@ void WiFiConfig::loadIpAddress()
 void WiFiConfig::configWifi()
 {
    loadIpAddress();
-   Serial.printf("WIFI_SSID %s\n", dataStore->configData.ssid);
-   Serial.printf("WIFI_PASSWORD %s\n", dataStore->configData.password);
-   Serial.printf("AUTH_USER %s\n", dataStore->configData.auth_user);
-   Serial.printf("AUTH_PASSWORD %s\n", dataStore->configData.auth_password);
-   Serial.printf("MDNS %s\n", dataStore->configData.mdns);
+   DEBUG_PRINTF("WIFI_SSID %s\n", dataStore->configData.ssid);
+   DEBUG_PRINTF("WIFI_PASSWORD %s\n", dataStore->configData.password);
+   DEBUG_PRINTF("AUTH_USER %s\n", dataStore->configData.auth_user);
+   DEBUG_PRINTF("AUTH_PASSWORD %s\n", dataStore->configData.auth_password);
+   DEBUG_PRINTF("MDNS %s\n", dataStore->configData.mdns);
 
    WiFi.config(local_ip, gateway, subnet, dns1, dns2);
    WiFi.mode(WIFI_STA);
@@ -30,9 +30,9 @@ void WiFiConfig::configWifi()
       switch (event)
       {
       case SYSTEM_EVENT_STA_CONNECTED:
-         Serial.println("Connected to access point");
+         DEBUG_PRINTLN("Connected to access point");
          if (instance != nullptr) {
-            Serial.printf("rssi %d dB\n", WiFi.RSSI());
+            DEBUG_PRINTF("rssi %d dB\n", WiFi.RSSI());
             instance->isReady = true;
             instance->startServer();
             // set green color
@@ -40,22 +40,22 @@ void WiFiConfig::configWifi()
                instance->argbStatus->setPixelColor(0, 0, 0, 255);
                instance->argbStatus->show();
             }else {
-               Serial.println("argbStatus is null");
+               DEBUG_PRINTLN("argbStatus is null");
             }
          }
          break;
       case SYSTEM_EVENT_STA_DISCONNECTED:
-         Serial.println("Disconnected from WiFi access point");
+         DEBUG_PRINTLN("Disconnected from WiFi access point");
          // set red color
          if (instance->argbStatus != nullptr) {
             instance->argbStatus->setPixelColor(0, 255, 0, 0);
             instance->argbStatus->show();
          } else {
-            Serial.println("argbStatus is null");
+            DEBUG_PRINTLN("argbStatus is null");
          }
          break;
       case SYSTEM_EVENT_AP_STADISCONNECTED:
-         Serial.println("WiFi client disconnected");
+         DEBUG_PRINTLN("WiFi client disconnected");
          break;
       default:
          break;
@@ -66,12 +66,12 @@ void WiFiConfig::configWifi()
 
 void WiFiConfig::startServer()
 {
-   Serial.print("IP Address: ");
-   Serial.println(WiFi.localIP());
+   DEBUG_PRINT("IP Address: ");
+   DEBUG_PRINTLN(WiFi.localIP());
 
    if (!MDNS.begin("espfanhub"))
    {
-      Serial.println("Error starting mDNS");
+      DEBUG_PRINTLN("Error starting mDNS");
    }
    MDNS.addService("http", "tcp", 80);
 
@@ -119,7 +119,7 @@ void WiFiConfig::startServer()
 
    server.on("/mode", HTTP_GET, [](PsychicRequest *request)
              {
-      Serial.println("ON GET MODE");
+      DEBUG_PRINTLN("ON GET MODE");
       JsonDocument doc;
       uint8_t modeCount = instance->argbStrip->getModeCount(); 
       for (uint8_t i = 0; i < modeCount; i++) {
@@ -138,7 +138,7 @@ void WiFiConfig::startServer()
    server.on(
        "/mode", HTTP_POST, [](PsychicRequest *request)
        {
-          Serial.println("ON SET MODE");
+          DEBUG_PRINTLN("ON SET MODE");
           JsonDocument doc;
           deserializeJson(doc, request->body());
           // check exist mode
@@ -176,7 +176,7 @@ void WiFiConfig::startServer()
    server.on(
        "/fan-source", HTTP_POST, [](PsychicRequest *request)
        {
-          Serial.println("ON SET SOURCE");
+          DEBUG_PRINTLN("ON SET SOURCE");
           JsonDocument doc;
           deserializeJson(doc, request->body());
 
@@ -191,7 +191,7 @@ void WiFiConfig::startServer()
                    instance->swSource->setSource(FAN_INPUT_SOURCES[i], doc["source"]);
                    instance->dataStore->configData.fanSource[i] = doc["source"];
                 }
-                Serial.println("SET ALL SOURCE");
+                DEBUG_PRINTLN("SET ALL SOURCE");
              }
              else
              {
@@ -202,14 +202,14 @@ void WiFiConfig::startServer()
           }
           else
           {
-             Serial.println("Invalid source");
+             DEBUG_PRINTLN("Invalid source");
           }
           return request->reply(204); });
 
    server.on(
        "/argb-source", HTTP_POST, [](PsychicRequest *request)
        {
-          Serial.println("ON SET SOURCE");
+          DEBUG_PRINTLN("ON SET SOURCE");
           JsonDocument doc;
           deserializeJson(doc, request->body());
 
@@ -222,14 +222,14 @@ void WiFiConfig::startServer()
           }
           else
           {
-             Serial.println("Invalid Argb source");
+             DEBUG_PRINTLN("Invalid Argb source");
           }
          return request->reply(204); });
 
    server.on(
        "/fan-duty", HTTP_POST, [](PsychicRequest *request)
        {
-          Serial.println("ON SET SOURCE");
+          DEBUG_PRINTLN("ON SET SOURCE");
           JsonDocument doc;
           deserializeJson(doc, request->body());
 
@@ -244,7 +244,7 @@ void WiFiConfig::startServer()
                 {
                    instance->dataStore->configData.fanDuty[i] = doc["duty"];
                 }
-                Serial.println("SET ALL DUTY");
+                DEBUG_PRINTLN("SET ALL DUTY");
              }
              else
              {
@@ -255,7 +255,7 @@ void WiFiConfig::startServer()
           }
           else
           {
-             Serial.println("Invalid duty");
+             DEBUG_PRINTLN("Invalid duty");
           }
           return request->reply(204); });
 
@@ -273,14 +273,14 @@ void WiFiConfig::startServer()
 
    ws.onOpen([](PsychicWebSocketClient *client)
              {
-      Serial.printf("[socket] connection #%u connected from %s\n", client->socket(), client->remoteIP().toString());
+      DEBUG_PRINTF("[socket] connection #%u connected from %s\n", client->socket(), client->remoteIP().toString());
       client->sendMessage("Hello!"); });
    ws.onFrame([](PsychicWebSocketRequest *request, httpd_ws_frame *frame)
               {
-      Serial.printf("[socket] #%d sent: %s\n", request->client()->socket(), (char *)frame->payload);
+      DEBUG_PRINTF("[socket] #%d sent: %s\n", request->client()->socket(), (char *)frame->payload);
       return request->reply(frame); });
    ws.onClose([](PsychicWebSocketClient *client)
-              { Serial.printf("[socket] connection #%u closed from %s\n", client->socket(), client->remoteIP().toString()); });
+              { DEBUG_PRINTF("[socket] connection #%u closed from %s\n", client->socket(), client->remoteIP().toString()); });
 
    server.on("/ws", &ws);
 
@@ -292,14 +292,14 @@ bool WiFiConfig::verifyAuth(String password)
 {
    String encodedPassword =
        base64::encode(String(this->dataStore->configData.auth_user) + ":" + String(this->dataStore->configData.auth_password));
-   Serial.printf("PASSWORD HASH %s \n", encodedPassword);
+   DEBUG_PRINTF("PASSWORD HASH %s \n", encodedPassword);
    return password == encodedPassword;
 }
 
 // bool WiFiConfig::authHandler(AsyncWebServerRequest *request)
 // {
 //    AsyncWebParameter *token = request->getParam("token");
-//    Serial.printf("User Try To Connect Using Token %s \n", token->value());
+//    DEBUG_PRINTF("User Try To Connect Using Token %s \n", token->value());
 //    if (instance != nullptr)
 //    {
 //       return instance->verifyAuth(token->value());
@@ -327,7 +327,7 @@ void WiFiConfig::service()
       WiFi.disconnect();
       WiFi.reconnect();
       lastReconnectAttempt = currentMillis;
-      Serial.println("Reconnect WiFi");
+      DEBUG_PRINTLN("Reconnect WiFi");
    }
    else
    {
@@ -342,17 +342,17 @@ void WiFiConfig::service()
 //    switch (type)
 //    {
 //    case WS_EVT_CONNECT:
-//       Serial.printf("WebSocket client #%u connected from %s\n", client->id(),
+//       DEBUG_PRINTF("WebSocket client #%u connected from %s\n", client->id(),
 //                     client->remoteIP().toString().c_str());
 //       break;
 //    case WS_EVT_DISCONNECT:
-//       Serial.printf("WebSocket client #%u disconnected\n", client->id());
+//       DEBUG_PRINTF("WebSocket client #%u disconnected\n", client->id());
 //       break;
 //    case WS_EVT_PONG:
-//       Serial.printf("WebSocket Pong #%u \n", client->id());
+//       DEBUG_PRINTF("WebSocket Pong #%u \n", client->id());
 //       break;
 //    case WS_EVT_ERROR:
-//       Serial.printf("WebSocket Error #%u \n", client->id());
+//       DEBUG_PRINTF("WebSocket Error #%u \n", client->id());
 //       break;
 //    }
 // }
@@ -383,7 +383,7 @@ esp_err_t WiFiConfig::handleUpdate(PsychicRequest *request, const String &filena
 
    if (!index && authenticated)
    {
-      Serial.println("Update");
+      DEBUG_PRINTLN("Update");
       size_t content_len = request->contentLength();
       if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH))
       {
@@ -403,7 +403,7 @@ esp_err_t WiFiConfig::handleUpdate(PsychicRequest *request, const String &filena
       // Calculate and print progress
       size_t content_len = request->contentLength();
       float progress = (float)(index + len) / content_len * 100;
-      Serial.printf("Progress: %.2f%%\n", progress);
+      DEBUG_PRINTF("Progress: %.2f%%\n", progress);
    }
 
    if (last && authenticated)
@@ -419,7 +419,7 @@ esp_err_t WiFiConfig::handleUpdate(PsychicRequest *request, const String &filena
       }
       else
       {
-         Serial.println("Update complete");
+         DEBUG_PRINTLN("Update complete");
          Serial.flush();
          ESP.restart();
       }
@@ -437,7 +437,7 @@ esp_err_t WiFiConfig::handleUpdate(PsychicRequest *request, const String &filena
 
 void printProgress(size_t prg, size_t sz)
 {
-   Serial.printf("Progress: %d%%\n", prg, sz);
+   DEBUG_PRINTF("Progress: %d%%\n", prg, sz);
 }
 
 int32_t WiFiConfig::rssi()

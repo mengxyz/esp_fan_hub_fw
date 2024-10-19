@@ -18,7 +18,7 @@ void Adalight::begin() {
     strip.show(); // Initialize all pixels to 'off'
 
     if (isSerialReady()) {
-        Serial.print("Ada\n");
+        DEBUG_PRINT("Ada\n");
     }
 
     lastByteTime = lastAckTime = millis();
@@ -101,7 +101,7 @@ void Adalight::dataMode() {
 
 void Adalight::timeouts() {
     if ((t - lastAckTime) >= 1000) {
-        Serial.print("Ada\n");
+        DEBUG_PRINT("Ada\n");
         lastAckTime = t;
 
         if ((t - lastByteTime) >= 60000) {

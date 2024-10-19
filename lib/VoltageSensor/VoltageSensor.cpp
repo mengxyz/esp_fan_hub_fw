@@ -9,21 +9,21 @@ void VoltageSensor::begin()
 {
     if (!inaFiveVolt.begin(&Wire))
     {
-        Serial.println("VoltageSensor 5V not ready");
+        DEBUG_PRINTLN("VoltageSensor 5V not ready");
     }
     else
     {
-        Serial.println("VoltageSensor 5V ready");
+        DEBUG_PRINTLN("VoltageSensor 5V ready");
         inaFiveVolt.setCalibration(5, 0.05, SHUNT_RESISTANCE);
         fiveVoltReady = true;
     }
     if (!inaTwelveVolt.begin(&Wire))
     {
-        Serial.println("VoltageSensor 12V not ready");
+        DEBUG_PRINTLN("VoltageSensor 12V not ready");
     }
     else
     {
-        Serial.println("VoltageSensor 12V ready");
+        DEBUG_PRINTLN("VoltageSensor 12V ready");
         inaTwelveVolt.setCalibration(VOLTAGE, SHUNT_GAIN, SHUNT_RESISTANCE);
         twelveVoltReady = true;
     }
