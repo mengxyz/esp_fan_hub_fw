@@ -137,12 +137,13 @@ void FanControl::initPcnt(uint8_t gpio_pin, pcnt_unit_t pcnt_unit)
   pcnt_counter_resume(pcnt_unit);
 }
 
-FanControl::FanControl(int pwm_freq, int pwm_res)
+FanControl::FanControl(int pwm_freq, int pwm_res) : pwmControl(PWM_GENERATOR_I2C_ADDRESS, &Wire)
 {
   this->pwm_freq = pwm_freq;
   this->pwm_res = pwm_res;
   instance = this;
 }
+
 void FanControl::service()
 {
   if (!(millis() - lastCalcTime >= 1000))
@@ -176,7 +177,7 @@ void FanControl::finalizePcnt()
   pwm_freq_buffers[4] = pwm_freqs[4];
   pwm_freqs[4] = 0;
   interrupts();
-  
+
   for (int i = 0; i < 4; i++)
   {
     pcnt_counter_pause(PCNT_UNITS[i]);
@@ -190,12 +191,20 @@ void FanControl::finalizePcnt()
   {
     pcnt_counter_resume(PCNT_UNITS[i]);
   }
-
 }
 
 void FanControl::begin()
 {
-  initPwmGenerator();
+  // initPwmGenerator();
+  bool pwmReady = pwmControl.begin();
+  if (!pwmReady)
+  {
+    DEBUG_PRINTLN("PWM Control not ready");
+  }
+  else
+  {
+    DEBUG_PRINTLN("PWM Control ready");
+  }
   DEBUG_PRINTLN("FanControl ready");
   for (int i = 0; i < 4; i++)
   {
@@ -221,13 +230,16 @@ void FanControl::setAllDuty(uint8_t duty)
   }
   for (int i = 0; i < 5; i++)
   {
-    ledcWrite(FAN_PWM_CHANNELS[i], duty);
+    // ledcWrite(FAN_PWM_CHANNELS[i], duty);
+    pwmControl.setDuty(i, duty);
   }
 }
 
 uint32_t FanControl::getDuty(uint8_t ch)
 {
-  int32_t duty = ledcRead(FAN_PWM_CHANNELS[ch]);
+  int duty = pwmControl.getDuty(ch);
+  // int duty = 0;
+  // int32_t duty = ledcRead(FAN_PWM_CHANNELS[ch]);
   if (duty > 255)
   {
     return 255;
@@ -239,7 +251,8 @@ void FanControl::initAllDuty(uint8_t (&duty)[5])
 {
   for (int i = 0; i < 5; i++)
   {
-    ledcWrite(FAN_PWM_CHANNELS[i], duty[i]);
+    pwmControl.setDuty(i, duty[i]);
+    // ledcWrite(FAN_PWM_CHANNELS[i], duty[i]);
   }
 }
 
@@ -249,7 +262,8 @@ bool FanControl::setDuty(uint8_t ch, uint8_t duty)
   {
     return false;
   }
-  ledcWrite(FAN_PWM_CHANNELS[ch], duty);
+  // ledcWrite(FAN_PWM_CHANNELS[ch], duty);
+  pwmControl.setDuty(ch, duty);
   return true;
 }
 

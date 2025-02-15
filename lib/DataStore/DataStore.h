@@ -7,6 +7,7 @@
 #include <MolexPowerMeter.h>
 #include <FanControl.h>
 #include <ConfigData.h>
+#include <AT24CX.h>
 
 #if !defined(DATA_STORE_H)
 #define DATA_STORE_H
@@ -25,6 +26,7 @@ private:
     void serializedConfigDataDoc();
     bool initEEPROM();
     I2C_eeprom ee;
+    AT24CX at24cx = AT24CX();
     bool eepromReady = false;
     uint8_t resetPin;
     volatile bool resetFlag = false;
@@ -36,7 +38,7 @@ private:
     void setDefaultConfigData();
 
 public:
-    DataStore(uint8_t eeAddress = 0x50, int eeSize = I2C_DEVICESIZE_24LC256, uint8_t resetPin = -1);
+    DataStore(uint8_t eeAddress = 0x50, int eeSize = I2C_DEVICESIZE_24LC16, uint8_t resetPin = -1);
     SensorData sensorData;
     ConfigData configData;
     String getSensorDataJson();

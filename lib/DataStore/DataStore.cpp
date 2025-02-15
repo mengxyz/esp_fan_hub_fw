@@ -1,4 +1,5 @@
 #include <DataStore.h>
+// #include <EEPROM.h>
 
 DataStore *DataStore::instance = nullptr;
 
@@ -133,7 +134,18 @@ void DataStore::serializedConfigDataDoc()
 
 bool DataStore::initEEPROM()
 {
+#ifdef ESP_EEPROM
+    if (!at24cx.begin())
+    {
+        return false;
+        DEBUG_PRINTLN("EEPROM not ready");
+    }
+    DEBUG_PRINTLN("EEPROM ready");
+    eepromReady = true;
+    return true;
+#else
     ee.begin();
+
     if (!ee.isConnected())
     {
         DEBUG_PRINTLN("EEPROM not ready");
@@ -142,6 +154,7 @@ bool DataStore::initEEPROM()
     DEBUG_PRINTLN("EEPROM ready");
     eepromReady = true;
     return true;
+#endif
 }
 
 DataStore::DataStore(uint8_t eeAddress, int eeSize, uint8_t resetPin) : ee(eeAddress, eeSize)
@@ -185,7 +198,11 @@ void DataStore::setMolexPowerData(MolexPowerMeter &molexPowerMeter)
 void DataStore::loadConfigData()
 {
     DEBUG_PRINTLN("Loading config data");
+#ifdef ESP_EEPROM
+    at24cx.readStruct(0, &configData, sizeof(configData));
+#else
     ee.readBlock(0, (uint8_t *)&configData, sizeof(configData));
+#endif
     DEBUG_PRINTLN("Config data loaded");
     serializedConfigDataDoc();
     serializeJsonPretty(configDataDoc, Serial);
@@ -251,8 +268,12 @@ void DataStore::setDefaultConfigData()
 
 void DataStore::saveConfigData()
 {
+#ifdef ESP_EEPROM
+    at24cx.writeStruct(0, &configData, sizeof(configData));
+#else
     ee.setBlock(0, 0, sizeof(configData));
     ee.writeBlock(0, (uint8_t *)&configData, sizeof(configData));
+#endif
     DEBUG_PRINTLN("Config data saved");
 }
 

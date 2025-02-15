@@ -2,6 +2,7 @@
 #include <SensorData.h>
 #include <driver/pcnt.h>
 #include <Debuger.h>
+#include <PWMGeneratorController.h>
 
 #if !defined(FAN_CONTROL_H)
 #define FAN_CONTROL_H
@@ -54,6 +55,7 @@ class FanControl
     static FanControl *instance;
 
 private:
+    PWMGeneratorController pwmControl;
     int pwm_freq;
     int pwm_res;
     volatile int16_t pwm_freqs[5] = {0, 0, 0, 0, 0};

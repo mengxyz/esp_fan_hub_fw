@@ -17,6 +17,8 @@ enum InputSource
     PWM_SW_CH_4 = P2,
     PWM_SW_CH_5 = P0,
     ARGB_SW = P1,
+    BUZZER = P7
+    // P3
 };
 
 const uint8_t FAN_INPUT_SOURCES[] = {P6, P5, P4, P2, P0};

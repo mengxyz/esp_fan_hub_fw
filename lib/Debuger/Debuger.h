@@ -1,7 +1,9 @@
+#include <Arduino.h>
+
 #ifdef FANHUB_DEBUG
-#define DEBUG_PRINT(...) DEBUG_PRINT(__VA_ARGS__)
-#define DEBUG_PRINTLN(...) DEBUG_PRINTLN(__VA_ARGS__)
-#define DEBUG_PRINTF(...) DEBUG_PRINTLN(__VA_ARGS__)
+#define DEBUG_PRINT(...) Serial.print(__VA_ARGS__)
+#define DEBUG_PRINTLN(...) Serial.println(__VA_ARGS__)
+#define DEBUG_PRINTF(...) Serial.printf(__VA_ARGS__)
 #else
 #define DEBUG_PRINT(...)
 #define DEBUG_PRINTLN(...)
