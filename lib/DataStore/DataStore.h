@@ -38,7 +38,8 @@ private:
     void setDefaultConfigData();
 
 public:
-    DataStore(uint8_t eeAddress = 0x50, int eeSize = I2C_DEVICESIZE_24LC16, uint8_t resetPin = -1);
+    DataStore(uint8_t eeAddress = 0x50, int eeSize = I2C_DEVICESIZE_24LC256, uint8_t resetPin = -1);
+    void setResetPin(uint8_t resetPin) { this->resetPin = resetPin; }
     SensorData sensorData;
     ConfigData configData;
     String getSensorDataJson();

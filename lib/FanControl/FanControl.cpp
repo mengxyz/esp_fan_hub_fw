@@ -80,17 +80,17 @@ void IRAM_ATTR FanControl::BTN_UTIL_2_ISR()
 
 void FanControl::initPwmGenerator()
 {
-  ledcSetup(PWM_CH_1, pwm_freq, pwm_res);
-  ledcSetup(PWM_CH_2, pwm_freq, pwm_res);
-  ledcSetup(PWM_CH_3, pwm_freq, pwm_res);
-  ledcSetup(PWM_CH_4, pwm_freq, pwm_res);
-  ledcSetup(PWM_CH_5, pwm_freq, pwm_res);
+  // ledcSetup(PWM_CH_1, pwm_freq, pwm_res);
+  // ledcSetup(PWM_CH_2, pwm_freq, pwm_res);
+  // ledcSetup(PWM_CH_3, pwm_freq, pwm_res);
+  // ledcSetup(PWM_CH_4, pwm_freq, pwm_res);
+  // ledcSetup(PWM_CH_5, pwm_freq, pwm_res);
 
-  ledcAttachPin(PIN_PWM_1, PWM_CH_1);
-  ledcAttachPin(PIN_PWM_2, PWM_CH_2);
-  ledcAttachPin(PIN_PWM_3, PWM_CH_3);
-  ledcAttachPin(PIN_PWM_4, PWM_CH_4);
-  ledcAttachPin(PIN_PWM_5, PWM_CH_4);
+  // ledcAttachPin(PIN_PWM_1, PWM_CH_1);
+  // ledcAttachPin(PIN_PWM_2, PWM_CH_2);
+  // ledcAttachPin(PIN_PWM_3, PWM_CH_3);
+  // ledcAttachPin(PIN_PWM_4, PWM_CH_4);
+  // ledcAttachPin(PIN_PWM_5, PWM_CH_4);
 }
 
 void FanControl::initTachometer()
@@ -199,13 +199,13 @@ void FanControl::begin()
   bool pwmReady = pwmControl.begin();
   if (!pwmReady)
   {
-    DEBUG_PRINTLN("PWM Control not ready");
+    FANHUB_DEBUG_PRINTLN("PWM Control not ready");
   }
   else
   {
-    DEBUG_PRINTLN("PWM Control ready");
+    FANHUB_DEBUG_PRINTLN("PWM Control ready");
   }
-  DEBUG_PRINTLN("FanControl ready");
+  FANHUB_DEBUG_PRINTLN("FanControl ready");
   for (int i = 0; i < 4; i++)
   {
     initPcnt(TAC_PINS[i], PCNT_UNITS[i]);
@@ -252,8 +252,8 @@ void FanControl::initAllDuty(uint8_t (&duty)[5])
   for (int i = 0; i < 5; i++)
   {
     pwmControl.setDuty(i, duty[i]);
-    // ledcWrite(FAN_PWM_CHANNELS[i], duty[i]);
   }
+  pwmControl.init();
 }
 
 bool FanControl::setDuty(uint8_t ch, uint8_t duty)

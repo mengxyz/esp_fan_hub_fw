@@ -28,6 +28,10 @@
     "type_traits": "cpp",
     "cinttypes": "cpp"
   },
+  "cmake.configureOnOpen": false,
+  "[cpp]": {
+    "editor.defaultFormatter": "xaver.clang-format"
+  }
   // "[c]": {
   //   "editor.defaultFormatter": "ms-vscode.cpptools"
   //   //☝🏼 Select the MS extension as defaultFormatter

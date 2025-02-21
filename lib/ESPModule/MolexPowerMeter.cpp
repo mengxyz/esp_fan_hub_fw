@@ -12,27 +12,27 @@ void MolexPowerMeter::begin()
 {
     if (!ina5V.begin())
     {
-        DEBUG_PRINTLN("MolexPowerMeter 5V not ready");
+        FANHUB_DEBUG_PRINTLN("MolexPowerMeter 5V not ready");
     }
     else
     {
         ina5V.setShuntR(0, SHUNT_RESISTANCE);
         ina5V.setShuntR(1, SHUNT_RESISTANCE);
         ina5V.setShuntR(2, SHUNT_RESISTANCE);
-        DEBUG_PRINTLN("MolexPowerMeter 5V ready");
+        FANHUB_DEBUG_PRINTLN("MolexPowerMeter 5V ready");
         is5VReady = true;
     }
 
     if (!ina12V.begin())
     {
-        DEBUG_PRINTLN("MolexPowerMeter 12V not ready");
+        FANHUB_DEBUG_PRINTLN("MolexPowerMeter 12V not ready");
     }
     else
     {
         ina12V.setShuntR(0, SHUNT_RESISTANCE);
         ina12V.setShuntR(1, SHUNT_RESISTANCE);
         ina12V.setShuntR(2, SHUNT_RESISTANCE);
-        DEBUG_PRINTLN("MolexPowerMeter 12V ready");
+        FANHUB_DEBUG_PRINTLN("MolexPowerMeter 12V ready");
         is12VReady = true;
     }
 }

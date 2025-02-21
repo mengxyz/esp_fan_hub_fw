@@ -12,7 +12,7 @@ void AT24CX::writeByte(uint16_t addr, uint8_t data) {
     _wire.write((uint8_t)(addr & 0xFF)); // 8-bit memory address
     _wire.write(data);
     _wire.endTransmission();
-    // delay(5); // EEPROM write cycle delay
+    delay(20); // EEPROM write cycle delay
 }
 
 uint8_t AT24CX::readByte(uint16_t addr) {

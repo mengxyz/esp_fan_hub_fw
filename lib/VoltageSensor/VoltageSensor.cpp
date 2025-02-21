@@ -9,21 +9,21 @@ void VoltageSensor::begin()
 {
     if (!inaFiveVolt.begin(&Wire))
     {
-        DEBUG_PRINTLN("VoltageSensor 5V not ready");
+        FANHUB_DEBUG_PRINTLN("VoltageSensor 5V not ready");
     }
     else
     {
-        DEBUG_PRINTLN("VoltageSensor 5V ready");
+        FANHUB_DEBUG_PRINTLN("VoltageSensor 5V ready");
         inaFiveVolt.setCalibration(5, 0.05, SHUNT_RESISTANCE);
         fiveVoltReady = true;
     }
     if (!inaTwelveVolt.begin(&Wire))
     {
-        DEBUG_PRINTLN("VoltageSensor 12V not ready");
+        FANHUB_DEBUG_PRINTLN("VoltageSensor 12V not ready");
     }
     else
     {
-        DEBUG_PRINTLN("VoltageSensor 12V ready");
+        FANHUB_DEBUG_PRINTLN("VoltageSensor 12V ready");
         inaTwelveVolt.setCalibration(VOLTAGE, SHUNT_GAIN, SHUNT_RESISTANCE);
         twelveVoltReady = true;
     }

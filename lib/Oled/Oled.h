@@ -8,6 +8,7 @@
 #include <DataStore.h>
 #include <RTClib.h>
 #include <WS2812FX.h>
+#include <Update.h>
 
 #define OLED_I2C_ADDRESS 0x3C
 
@@ -21,26 +22,45 @@ const uint8_t OLED_STARTUP_PAGE_TIME_OUT = 10;
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
 
-class Oled {
+#ifdef USE_RTC_DS3231
+    #define RTC_TYPE RTC_DS3231
+#endif
+#ifdef USE_RTC_PCF8563
+    #define RTC_TYPE RTC_PCF8563
+#endif
+
+class Oled
+{
 public:
     Oled();
     void begin();
     void service(DataStore &dataStore);
-	void setRtc(RTC_DS3231 *rtc) {
-		this->rtc = rtc;
-	}
+    void setRtc(RTC_TYPE *rtc)
+    {
+        this->rtc = rtc;
+    }
 
-    void setStrip(WS2812FX *strip) {
+    void setStrip(WS2812FX *strip)
+    {
         this->strip = strip;
     }
 
+    void setOnUpdate(bool state)
+    {
+        onUpdate = state;
+    }
+
+    void displayUpdate(float progress);
+
 private:
+    bool onUpdate = false;
+    uint8_t updateProgress = 0;
     Adafruit_SSD1306 display;
     WS2812FX *strip;
     unsigned long latestUpdateMillis = 0;
     int currentPage = 0;
     int tickPageChange = 0;
-	RTC_DS3231 *rtc;
+    RTC_TYPE *rtc;
     U8G2_FOR_ADAFRUIT_GFX u8g2Writer;
     void displayData(DataStore &dataStore);
     void displaySplash();
@@ -51,6 +71,5 @@ private:
     void displayLightInfo(DataStore &dataStore);
     void displaySystemUsage();
 };
-
 
 #endif

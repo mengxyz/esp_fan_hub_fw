@@ -5,10 +5,12 @@ DataStore *DataStore::instance = nullptr;
 
 void DataStore::begin()
 {
+    FANHUB_DEBUG_PRINTF("RESET_PIN %d\n", resetPin);
     if (resetPin != -1)
     {
+        FANHUB_DEBUG_PRINTF("Attaching Reset pin: %d\n", resetPin);
         pinMode(resetPin, INPUT_PULLUP);
-        attachInterrupt(digitalPinToInterrupt(resetPin), RESET_FLAG, CHANGE);
+        attachInterrupt(digitalPinToInterrupt(resetPin), RESET_FLAG, FALLING);
         delay(10);
     }
     setDefaultConfigData();
@@ -138,9 +140,9 @@ bool DataStore::initEEPROM()
     if (!at24cx.begin())
     {
         return false;
-        DEBUG_PRINTLN("EEPROM not ready");
+        FANHUB_DEBUG_PRINTLN("EEPROM not ready");
     }
-    DEBUG_PRINTLN("EEPROM ready");
+    FANHUB_DEBUG_PRINTLN("EEPROM ready");
     eepromReady = true;
     return true;
 #else
@@ -148,10 +150,10 @@ bool DataStore::initEEPROM()
 
     if (!ee.isConnected())
     {
-        DEBUG_PRINTLN("EEPROM not ready");
+        FANHUB_DEBUG_PRINTLN("EEPROM not ready");
         return false;
     }
-    DEBUG_PRINTLN("EEPROM ready");
+    FANHUB_DEBUG_PRINTLN("EEPROM ready");
     eepromReady = true;
     return true;
 #endif
@@ -173,9 +175,9 @@ String DataStore::getConfigDataJson()
 void DataStore::printSensorData()
 {
     serializedSensorDataDoc();
-    DEBUG_PRINTLN();
+    FANHUB_DEBUG_PRINTLN();
     serializeJsonPretty(sensorDataDoc, Serial);
-    DEBUG_PRINTLN();
+    FANHUB_DEBUG_PRINTLN();
 }
 
 void DataStore::setThermisterData(Thermister &thermister)
@@ -197,16 +199,16 @@ void DataStore::setMolexPowerData(MolexPowerMeter &molexPowerMeter)
 
 void DataStore::loadConfigData()
 {
-    DEBUG_PRINTLN("Loading config data");
+    FANHUB_DEBUG_PRINTLN("Loading config data");
 #ifdef ESP_EEPROM
     at24cx.readStruct(0, &configData, sizeof(configData));
 #else
     ee.readBlock(0, (uint8_t *)&configData, sizeof(configData));
 #endif
-    DEBUG_PRINTLN("Config data loaded");
+    FANHUB_DEBUG_PRINTLN("Config data loaded");
     serializedConfigDataDoc();
     serializeJsonPretty(configDataDoc, Serial);
-    DEBUG_PRINTLN("");
+    FANHUB_DEBUG_PRINTLN("");
 }
 
 void DataStore::setDefaultConfigData()
@@ -247,11 +249,20 @@ void DataStore::setDefaultConfigData()
     {
         configData.fanSource[i] = 0;
     }
+    
+    for (int i = 0; i < 5; i++)
+    {
+        configData.fanDuty[i] = 150;
+    }
+
     configData.argb.mode = 0;
     configData.argb.speed = 1000;
     configData.argb.brightness = 255;
     configData.argb.source = LOW;
     configData.argb.color = 1179392;
+
+    configData.modbus.unit_id = MODBUS_UNIT_ID;
+    configData.modbus.baud_rate_index = MODBUS_BAUD_RATE_INDEX;
 
     for (int i = 0; i < 3; i++)
     {
@@ -274,7 +285,7 @@ void DataStore::saveConfigData()
     ee.setBlock(0, 0, sizeof(configData));
     ee.writeBlock(0, (uint8_t *)&configData, sizeof(configData));
 #endif
-    DEBUG_PRINTLN("Config data saved");
+    FANHUB_DEBUG_PRINTLN("Config data saved");
 }
 
 void DataStore::saveDefaultConfigData()
@@ -285,29 +296,30 @@ void DataStore::saveDefaultConfigData()
 
 void IRAM_ATTR DataStore::RESET_FLAG()
 {
-    if (!instance)
-        return;
+    // if (!instance)
+    //     return;
     if (digitalRead(instance->resetPin) == LOW)
     {
-        instance->resetPressTime = millis();
+        // instance->resetPressTime = millis();
         instance->resetFlag = true;
     }
-    else
-    {
-        instance->resetFlag = false;
-    }
+    // else
+    // {
+    //     instance->resetFlag = false;
+    // }
 }
 
 void DataStore::service()
 {
     if (resetFlag)
     {
-        unsigned long currentMillis = millis();
-        if (currentMillis - resetPressTime > resetThreshold)
+        FANHUB_DEBUG_PRINTLN("USER RESET");
+        // unsigned long currentMillis = millis();
+        // if (currentMillis - resetPressTime > resetThreshold)
         {
             saveDefaultConfigData();
             ESP.restart();
-            resetFlag = false;
+            // resetFlag = false;
         }
     }
 }

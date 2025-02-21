@@ -8,7 +8,7 @@
 // int previousDataLength = 0;
 // void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t *data)
 // {
-//   DEBUG_PRINTF("onDmxFrame U: %d L: %d S: %d\n", universe, length, sequence);
+//   FANHUB_DEBUG_PRINTF("onDmxFrame U: %d L: %d S: %d\n", universe, length, sequence);
 //   sendFrame = 1;
 //   // set brightness of the whole strip
 //   if (universe == 15)
@@ -25,7 +25,7 @@
 //   {
 //     if (universesReceived[i] == 0)
 //     {
-//       DEBUG_PRINTLN("Broke");
+//       FANHUB_DEBUG_PRINTLN("Broke");
 //       sendFrame = 0;
 //       break;
 //     }

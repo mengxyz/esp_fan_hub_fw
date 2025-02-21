@@ -15,6 +15,9 @@ public:
     void setDuty(uint8_t channel, uint8_t duty); // Set the duty cycle of a specific channel
     uint8_t getFreq(); // Get the frequency of the PWM generator
     void setFreq(uint8_t freq); // Set the frequency of the PWM generator
+    void init();
+    void disable();
+    void enable();
 
 private:
     uint8_t _slaveAddr; // I2C address of the PWM generator

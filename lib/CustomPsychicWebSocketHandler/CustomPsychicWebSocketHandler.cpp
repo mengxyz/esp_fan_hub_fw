@@ -13,7 +13,7 @@ CustomPsychicWebSocketHandler::~CustomPsychicWebSocketHandler()
 
 esp_err_t CustomPsychicWebSocketHandler::handleRequest(PsychicRequest *request)
 {
-    DEBUG_PRINTLN("CustomPsychicWebSocketHandler::handleRequest");
+    FANHUB_DEBUG_PRINTLN("CustomPsychicWebSocketHandler::handleRequest");
     PsychicClient *client = checkForNewClient(request->client());
 
     // if no token reject this client
@@ -22,16 +22,16 @@ esp_err_t CustomPsychicWebSocketHandler::handleRequest(PsychicRequest *request)
     {  
         // if (request->queryString())
         // {
-        //     DEBUG_PRINTLN("Invalid Token");
+        //     FANHUB_DEBUG_PRINTLN("Invalid Token");
         //     return ESP_FAIL;
         // }
         // else
         // {
-        //     DEBUG_PRINTLN("Valid Token");
-        //     DEBUG_PRINTLN(request->header("Sec-WebSocket-Protocol"));
+        //     FANHUB_DEBUG_PRINTLN("Valid Token");
+        //     FANHUB_DEBUG_PRINTLN(request->header("Sec-WebSocket-Protocol"));
         // }
         // if(request->url() != "/ws?token=dXNlcjoxMjM0NTY=") {
-        //     DEBUG_PRINTLN("Invalid Token");
+        //     FANHUB_DEBUG_PRINTLN("Invalid Token");
         //     return ESP_FAIL;
         // }
         if (client->isNew)

@@ -50,34 +50,35 @@ extern const char *env_dns2;
 extern const char *env_mdns;
 #endif
 
-struct ArgbConfig
-{
-    uint8_t mode;
-    uint8_t brightness;
-    uint16_t speed;
-    uint8_t source;
-    uint32_t color;
+struct ArgbConfig {
+  uint8_t mode;
+  uint8_t brightness;
+  uint16_t speed;
+  uint8_t source;
+  uint32_t color;
 };
 
-
-struct ConfigData
-{
-    char ssid[32];
-    char password[64];
-    char local_ip[32];
-    char gateway[32];
-    char subnet[32];
-    char dns1[32];
-    char dns2[32];
-    char mdns[32];
-
-    char auth_user[64];
-    char auth_password[64];
-    uint8_t fanSource[5];
-    uint8_t fanDuty[5];
-    ArgbConfig argb;
+struct ModbusConfig {
+  uint8_t unit_id;
+  uint16_t baud_rate_index;
 };
 
+struct ConfigData {
+  char ssid[32];
+  char password[64];
+  char local_ip[32];
+  char gateway[32];
+  char subnet[32];
+  char dns1[32];
+  char dns2[32];
+  char mdns[32];
 
+  char auth_user[64];
+  char auth_password[64];
+  uint8_t fanSource[5];
+  uint8_t fanDuty[5];
+  ArgbConfig argb;
+  ModbusConfig modbus;
+};
 
 #endif // CONFIG_DATA_H

@@ -1,9 +1,20 @@
 #include "PWMGeneratorController.h"
 
-#define SET_DUTY_COMMAND 0x01
-#define SET_FREQ_COMMAND 0x02
-#define READ_DUTY_COMMAND 0x03
-#define READ_FREQ_COMMAND 0x04
+#define SET_DUTY_CH1_CMD 0x10
+#define SET_DUTY_CH2_CMD 0x11
+#define SET_DUTY_CH3_CMD 0x12
+#define SET_DUTY_CH4_CMD 0x13
+#define SET_DUTY_CH5_CMD 0x14
+
+#define BEGIN_PWM_CMD 0x01
+#define DISABLE_PWM_CMD 0x05
+#define ENABLE_PWM_CMD 0x06
+
+const uint8_t SET_DUTY_COMMANDS[5] = {SET_DUTY_CH1_CMD, SET_DUTY_CH2_CMD, SET_DUTY_CH3_CMD, SET_DUTY_CH4_CMD, SET_DUTY_CH5_CMD};
+
+#define SET_FREQ_CMD 0x02
+#define READ_DUTY_CMD 0x03
+#define READ_FREQ_CMD 0x04
 #define MAX_CHANNEL 5
 
 PWMGeneratorController::PWMGeneratorController(uint8_t slaveAddr, TwoWire* wire)
@@ -11,7 +22,7 @@ PWMGeneratorController::PWMGeneratorController(uint8_t slaveAddr, TwoWire* wire)
 
 bool PWMGeneratorController::begin() {
     _wire->beginTransmission(_slaveAddr);
-    _wire->write(READ_FREQ_COMMAND); // Command to get frequency
+    _wire->write(READ_FREQ_CMD); // Command to get frequency
     _wire->endTransmission();
 
     // Check if the PWM generator is ready by sending a dummy command
@@ -33,7 +44,7 @@ uint8_t PWMGeneratorController::getDuty(uint8_t channel) {
         return -1; // Error: Invalid channel
     }
 
-    sendCommand(READ_DUTY_COMMAND);
+    sendCommand(READ_DUTY_CMD);
 
     _wire->requestFrom(_slaveAddr, MAX_CHANNEL);
     
@@ -48,16 +59,17 @@ uint8_t PWMGeneratorController::getDuty(uint8_t channel) {
 
 void PWMGeneratorController::setDuty(uint8_t channel, uint8_t duty) {
     uint8_t dutyPercentage = ceil(duty / 255.0 * 100);
+    Serial.printf("Channel: %d, Duty: %d%%\n", channel, dutyPercentage);
     if (channel < 0 || channel > 4 || dutyPercentage < 0 || dutyPercentage > 100) {
         Serial.printf("Error: Invalid channel or duty cycle. %d, %d\n", channel, dutyPercentage);
         return;
     }
 
-    sendCommandData(SET_DUTY_COMMAND, (channel * 10) + (dutyPercentage / 10));
+    sendCommandData(SET_DUTY_COMMANDS[channel], dutyPercentage);
 }
 
 uint8_t PWMGeneratorController::getFreq() {
-    sendCommand(READ_FREQ_COMMAND);
+    sendCommand(READ_FREQ_CMD);
 
     // Request the response
     _wire->requestFrom(_slaveAddr, 1);
@@ -73,7 +85,19 @@ void PWMGeneratorController::setFreq(uint8_t freq) {
         Serial.println("Error: Invalid frequency.");
         return;
     }
-    sendCommandData(SET_FREQ_COMMAND, freq / 1000);
+    sendCommandData(SET_FREQ_CMD, freq / 1000);
+}
+
+void PWMGeneratorController::init() {
+    sendCommand(BEGIN_PWM_CMD);
+}
+
+void PWMGeneratorController::disable() {
+    sendCommand(DISABLE_PWM_CMD);
+}
+
+void PWMGeneratorController::enable() {
+    sendCommand(ENABLE_PWM_CMD);
 }
 
 void PWMGeneratorController::sendCommandData(uint8_t command, uint8_t data)

@@ -1,4 +1,5 @@
 #include <BoardTempSensor.h>
+#include <Debuger.h>
 
 BoardTempSensor::BoardTempSensor(SHTSensor::SHTSensorType sensorType): sht(sensorType)
 {
@@ -6,7 +7,11 @@ BoardTempSensor::BoardTempSensor(SHTSensor::SHTSensorType sensorType): sht(senso
 
 void BoardTempSensor::begin()
 {
-    sht.init();
+    if(sht.init()) {
+        FANHUB_DEBUG_PRINTLN("Board Temp Sensor ready");
+        return;
+    } 
+    FANHUB_DEBUG_PRINTLN("Board Temp Sensor not ready");
 }
 
 void BoardTempSensor::readSensors(float &temp, float &humi, float &cpuTemp)
